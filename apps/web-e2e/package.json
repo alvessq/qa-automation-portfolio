@@ -12,7 +12,8 @@
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
     "report": "playwright show-report",
-    "health": "node scripts/health.mjs"
+    "health": "node scripts/health.mjs",
+    "test:unit": "node --test \"scripts/**/*.test.mjs\""
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

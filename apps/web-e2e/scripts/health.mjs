@@ -1,34 +1,26 @@
-// Health check rápido do site alvo: responde, dentro do tempo, com a aplicação de login?
-// Sai com código 1 em caso de falha, para ser usado pelo agendador e pela CI.
+// Health check do site alvo, uma conferência por serviço:
+//   npm run health                     todas
+//   npm run health -- imagens catalogo só as escolhidas
+// Sai com código 1 se qualquer conferência falhar, para o agendador e a CI.
 import 'dotenv/config';
+import { createProbes, runProbes } from './lib/probes.mjs';
 
 const baseUrl = process.env.BASE_URL || 'https://www.saucedemo.com';
 const timeoutMs = Number(process.env.HEALTH_TIMEOUT_MS) || 15_000;
 
-async function check() {
-  const startedAt = performance.now();
-  const response = await fetch(baseUrl, { redirect: 'follow', signal: AbortSignal.timeout(timeoutMs) });
-  const html = await response.text();
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-  // O Sauce Demo é uma SPA: o HTML inicial só referencia o bundle JS, então
-  // validamos também que o bundle carrega e contém o formulário de login.
-  const bundlePath = /<script[^>]+src="([^"]+\.js)"/.exec(html)?.[1];
-  if (!bundlePath) throw new Error('HTML sem bundle JavaScript');
-
-  const bundle = await fetch(new URL(bundlePath, baseUrl), { signal: AbortSignal.timeout(timeoutMs) });
-  const source = await bundle.text();
-  if (!bundle.ok) throw new Error(`bundle ${bundlePath} respondeu HTTP ${bundle.status}`);
-  if (!source.includes('login-button')) throw new Error(`bundle ${bundlePath} sem o formulário de login`);
-
-  return { status: response.status, elapsed: Math.round(performance.now() - startedAt) };
-}
-
 try {
-  const { status, elapsed } = await check();
-  console.log(`✔ ${baseUrl} saudável — HTTP ${status} em ${elapsed} ms`);
+  const results = await runProbes(createProbes({ baseUrl, timeoutMs }), process.argv.slice(2));
+  console.log(`Health de ${baseUrl}`);
+  for (const r of results) {
+    console.log(`${r.ok ? '✔' : '✖'} ${r.label.padEnd(36)} ${String(r.ms).padStart(5)} ms  ${r.detail}`);
+  }
+  const failed = results.filter((r) => !r.ok);
+  if (failed.length) {
+    console.error(`✖ ${baseUrl} indisponível: ${failed.map((r) => `${r.name} (${r.detail})`).join('; ')}`);
+    process.exitCode = 1;
+  }
 } catch (error) {
-  console.error(`✖ ${baseUrl} indisponível: ${error instanceof Error ? error.message : String(error)}`);
+  console.error(`✖ ${error instanceof Error ? error.message : String(error)}`);
   // exitCode em vez de process.exit(): deixa o Node fechar os sockets antes de sair.
   process.exitCode = 1;
 }
