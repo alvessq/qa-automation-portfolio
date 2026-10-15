@@ -1,8 +1,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { createWatchdog, downMessage } from './lib/watchdog.mjs';
 import { parseDevices } from './lib/android.mjs';
-import { ciEnv, emulatorArgs, parseArgs, pickAvd } from './ci-local.mjs';
+import { emulatorArgs, pickAvd, portOf } from './lib/emulator.mjs';
+import { createCounter, decideRecycle } from './lib/recycle.mjs';
+import { ciEnv, parseArgs } from './ci-local.mjs';
 
 describe('createWatchdog', () => {
   const answers = (...list) => () => list.shift();
@@ -33,10 +38,58 @@ describe('createWatchdog', () => {
   });
 });
 
-describe('parseDevices', () => {
-  it('ignora devices offline e não autorizados', () => {
+describe('android e emulador', () => {
+  it('parseDevices ignora devices offline e não autorizados', () => {
     const output = 'List of devices attached\nemulator-5554\tdevice\nemulator-5556\toffline\nR58M\tunauthorized\n';
     assert.deepEqual(parseDevices(output), ['emulator-5554']);
+  });
+
+  it('emulatorArgs: padrão com janela e GPU; headless repete a CI', () => {
+    assert.deepEqual(emulatorArgs({ avd: 'Pixel_6' }), ['-avd', 'Pixel_6', '-gpu', 'host']);
+    const ci = emulatorArgs({ avd: 'Pixel_6', port: 5556, headless: true });
+    assert.deepEqual(ci.slice(0, 4), ['-avd', 'Pixel_6', '-port', '5556']);
+    assert.ok(ci.includes('-no-window'));
+    assert.equal(ci[ci.indexOf('-gpu') + 1], 'swiftshader_indirect');
+    const ciGpu = emulatorArgs({ avd: 'x', headless: true, gpu: true });
+    assert.equal(ciGpu[ciGpu.indexOf('-gpu') + 1], 'host');
+  });
+
+  it('pickAvd escolhe o pedido ou o primeiro', () => {
+    assert.equal(pickAvd(['A', 'B'], 'B'), 'B');
+    assert.equal(pickAvd(['A', 'B']), 'A');
+    assert.equal(pickAvd(['A'], 'Z'), null);
+    assert.equal(pickAvd([]), null);
+  });
+
+  it('portOf lê a porta do serial do emulador', () => {
+    assert.equal(portOf('emulator-5556'), 5556);
+    assert.equal(portOf('R58M123'), null);
+  });
+});
+
+describe('reciclagem', () => {
+  it('mantém até completar o intervalo e reinicia ao atingir', () => {
+    assert.equal(decideRecycle({ count: 2, every: 3 }).action, 'keep');
+    assert.equal(decideRecycle({ count: 3, every: 3 }).action, 'restart');
+  });
+
+  it('não se aplica na CI, em device físico, desligada ou com intervalo 0', () => {
+    assert.equal(decideRecycle({ ci: true, count: 9 }).action, 'skip');
+    assert.equal(decideRecycle({ isEmulator: false, count: 9 }).action, 'skip');
+    assert.equal(decideRecycle({ enabled: false, count: 9 }).action, 'skip');
+    assert.equal(decideRecycle({ count: 9, every: 0 }).action, 'keep');
+  });
+
+  it('o contador é por device e sobrevive entre processos', () => {
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'recycle-')), 'runs.json');
+    const a = createCounter(file);
+    a.increment('emulator-5554');
+    a.increment('emulator-5554');
+    const b = createCounter(file);
+    assert.equal(b.get('emulator-5554'), 2);
+    assert.equal(b.get('emulator-5556'), 0);
+    b.reset('emulator-5554');
+    assert.equal(a.get('emulator-5554'), 0);
   });
 });
 
@@ -46,26 +99,12 @@ describe('ci-local', () => {
     assert.deepEqual(parseArgs(['regression', '--gpu']), { suite: 'regression', gpu: true, keep: false });
   });
 
-  it('repete as opções do emulador da CI', () => {
-    const args = emulatorArgs({ avd: 'Pixel_6', port: 5556 });
-    assert.deepEqual(args.slice(0, 4), ['-avd', 'Pixel_6', '-port', '5556']);
-    assert.ok(args.includes('-no-window'));
-    assert.equal(args[args.indexOf('-gpu') + 1], 'swiftshader_indirect');
-    assert.equal(emulatorArgs({ avd: 'x', gpu: true })[emulatorArgs({ avd: 'x', gpu: true }).indexOf('-gpu') + 1], 'host');
-  });
-
-  it('escolhe o AVD pedido ou o primeiro da lista', () => {
-    assert.equal(pickAvd(['A', 'B'], 'B'), 'B');
-    assert.equal(pickAvd(['A', 'B']), 'A');
-    assert.equal(pickAvd(['A'], 'Z'), null);
-    assert.equal(pickAvd([]), null);
-  });
-
-  it('roda a suíte com o ambiente da CI no device novo', () => {
+  it('roda a suíte com o ambiente da CI no device novo e sem reciclagem', () => {
     const env = ciEnv({ PATH: '/bin', RECORD_VIDEO: 'true' }, 'emulator-5556');
     assert.equal(env.CI, 'true');
     assert.equal(env.ANDROID_UDID, 'emulator-5556');
     assert.equal(env.RECORD_VIDEO, 'false');
+    assert.equal(env.EMULATOR_RECYCLE, 'false');
     assert.equal(env.PATH, '/bin');
   });
 });
