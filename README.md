@@ -32,6 +32,7 @@ Os dois alvos são aplicações públicas mantidas pela Sauce Labs justamente pa
 - **Diagnóstico de ambiente** (`doctor`) antes da suíte mobile. Ele confere JDK, SDK, `adb`, device, APK e driver, e falha cedo com uma mensagem clara.
 - **CI no GitHub Actions** com emulador Android acelerado por KVM, cache de AVD e de driver, monitoramento agendado e artifacts com as evidências.
 - **Agendador** com janela de horário por job (inclusive janelas que atravessam a meia-noite), fila serial e uma lista fechada de scripts permitidos. A API nunca executa comandos livres.
+- **Triagem de falhas:** um job que falha é repetido antes de qualquer aviso. Falhou em todas as repetições: bug, com issue no GitHub (sem duplicar). Passou em alguma: falha passageira. O ambiente caiu: problema de ambiente, sem issue.
 - **2 bugs reais encontrados** no app de demonstração ([veja abaixo](#bugs-encontrados)).
 
 ## Estrutura
@@ -121,6 +122,22 @@ npm run scheduler                      # http://127.0.0.1:7400
 
 Os jobs ficam em [`apps/test-scheduler/config.json`](apps/test-scheduler/config.json). Cada job aponta para um script npm de um workspace de teste e define intervalo, janela de horário e timeout. Pelo painel dá para ativar ou desativar jobs, executar na hora, parar, acompanhar a fila e ler o log de cada execução.
 
+#### Triagem de falhas
+
+Teste E2E às vezes falha por instabilidade e não por defeito. Para não transformar cada falha em alarme, os jobs com `"triage": true` passam por uma triagem antes de qualquer aviso:
+
+```
+job falha ──► repete até 3 vezes (na frente da fila)
+               ├─ falhou em todas ......... bug confirmado ─► issue no GitHub + webhook
+               ├─ passou em alguma ........ falha passageira ─► só webhook
+               └─ saída de ambiente caído . problema de ambiente ─► só webhook
+```
+
+- **Problema de ambiente** é reconhecido pela saída: device offline, sessão do Appium recusada, DNS ou rede fora, navegador não instalado ([`triage.mjs`](apps/test-scheduler/src/triage.mjs)). Nesses casos o job nem é repetido.
+- **Sem issue duplicada:** cada falha ganha uma impressão digital (job + primeira linha de erro, sem números). Se já existe issue aberta com a mesma impressão, a triagem comenta nela em vez de abrir outra.
+- **Avisos opcionais:** com `GITHUB_REPOSITORY` e `GITHUB_TOKEN`, bug confirmado vira issue com o rótulo `triagem`. Com `TRIAGE_WEBHOOK_URL`, todo veredito gera um aviso curto (Slack, Teams ou Discord). Sem nada configurado, os vereditos aparecem só no painel.
+- O health check fica de fora (`"triage": false`): ele existe justamente para avisar rápido.
+
 ## Configuração
 
 Cada workspace tem um `.env.example`. Copie para `.env` só se quiser sobrescrever os padrões. O `.env` nunca é versionado.
@@ -137,6 +154,9 @@ Cada workspace tem um `.env.example`. Copie para `.env` só se quiser sobrescrev
 | `HOST` / `PORT` | scheduler | `127.0.0.1` / `7400` |
 | `SCHEDULER_TZ` | scheduler | `America/Sao_Paulo` |
 | `START_PAUSED` | scheduler | `false` |
+| `TRIAGE_RETRIES` | scheduler | `3` |
+| `GITHUB_REPOSITORY` / `GITHUB_TOKEN` | scheduler | vazio (sem issues) |
+| `TRIAGE_WEBHOOK_URL` | scheduler | vazio (sem webhook) |
 
 ## Cenários cobertos
 
