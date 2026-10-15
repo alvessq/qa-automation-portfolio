@@ -2,13 +2,13 @@
   "jobs": [
     {
       "id": "web-health",
-      "name": "Web · health check",
+      "name": "Web · conferência dos 5 serviços",
       "workspace": "web-e2e",
       "script": "health",
       "intervalMinutes": 5,
       "window": {
-        "from": "07:00",
-        "to": "22:00"
+        "from": "08:00",
+        "to": "18:00"
       },
       "timeoutMinutes": 2,
       "enabled": true,

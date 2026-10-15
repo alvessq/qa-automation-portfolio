@@ -21,7 +21,19 @@ export function parseSpec(source) {
   return { feature: feature ? tidy(feature[2]) : null, scenarios };
 }
 
-const HEALTH = [{ feature: 'Saúde do site', file: 'scripts/health.mjs', scenarios: [{ title: 'o site responde e carrega o formulário de login', tags: [] }] }];
+const HEALTH = [
+  {
+    feature: 'Saúde do site',
+    file: 'scripts/health.mjs',
+    scenarios: [
+      'a página inicial responde',
+      'o aplicativo carrega com o formulário de login',
+      'a folha de estilo carrega',
+      'o catálogo tem produtos',
+      'as imagens dos produtos carregam',
+    ].map((title) => ({ title, tags: [] })),
+  },
+];
 
 function readSpecs(dir, names) {
   if (!fs.existsSync(dir)) return [];
