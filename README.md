@@ -120,7 +120,11 @@ npm run report:web                     # abre o relatório HTML
 npm run scheduler                      # http://127.0.0.1:7400
 ```
 
-Os jobs ficam em [`apps/test-scheduler/config.json`](apps/test-scheduler/config.json). Cada job aponta para um script npm de um workspace de teste e define intervalo, janela de horário e timeout. Pelo painel dá para ativar ou desativar jobs, executar na hora, parar, acompanhar a fila e ler o log de cada execução.
+Os jobs ficam em [`apps/test-scheduler/config.json`](apps/test-scheduler/config.json). Cada job aponta para um script npm de um workspace de teste e define intervalo, janela de horário e timeout. Pelo painel dá para ativar ou desativar jobs, executar na hora, parar, acompanhar a fila e ler o log de cada execução. Além disso:
+
+- **O que cada job testa:** o botão "O que testa" lista, em português, as funcionalidades e os cenários que o script executa, lidos dos próprios arquivos de teste (inclusive o filtro por `@smoke` e as suítes do `suites.json`). Quem não lê código entende o que passou ou falhou.
+- **Configuração conferida na subida:** o painel e o log listam as variáveis que faltam e o que cada ausência desliga, sem nunca mostrar os valores. Os `.env` ficam fora do Git, então depois de um clone novo essa é a pista do que repor.
+- **Abre pausado:** abrir o painel não dispara nenhuma suíte. Retomar a agenda é uma decisão explícita (`START_PAUSED=false` muda o padrão; na CI ela nunca começa pausada).
 
 #### Triagem de falhas
 
@@ -153,7 +157,8 @@ Cada workspace tem um `.env.example`. Copie para `.env` só se quiser sobrescrev
 | `SAUCE_STANDARD_USER` / `SAUCE_PASSWORD` | web | credenciais públicas do site |
 | `HOST` / `PORT` | scheduler | `127.0.0.1` / `7400` |
 | `SCHEDULER_TZ` | scheduler | `America/Sao_Paulo` |
-| `START_PAUSED` | scheduler | `false` |
+| `START_PAUSED` | scheduler | `true` (a agenda abre pausada) |
+| `PANEL_USER` / `PANEL_PASSWORD` | scheduler | vazio (obrigatório fora de localhost) |
 | `TRIAGE_RETRIES` | scheduler | `3` |
 | `GITHUB_REPOSITORY` / `GITHUB_TOKEN` | scheduler | vazio (sem issues) |
 | `TRIAGE_WEBHOOK_URL` | scheduler | vazio (sem webhook) |
@@ -209,7 +214,7 @@ Durante a automação apareceram dois defeitos no **My Demo App Android 2.3.0**:
 - **Seletores mobile:** a ordem de preferência é `resource-id`, depois accessibility id (`content-desc`) e, por último, texto. Os dois primeiros não dependem do idioma nem da cópia do app.
 - **Isolamento sem reinstalar:** o `mobile: clearApp` zera os dados do app em cerca de 1 segundo. Reinstalar o APK a cada teste levaria vários.
 - **Uma suíte por vez no agendador:** o emulador não suporta sessões concorrentes, e rodar em série evita falsos negativos por disputa de recursos.
-- **Agendador seguro por padrão:** ele escuta só em `127.0.0.1`. Jobs só referenciam scripts que existem no `package.json` dos workspaces permitidos, e qualquer outro valor é recusado com HTTP 400.
+- **Agendador seguro por padrão:** ele escuta só em `127.0.0.1` e abre com a agenda pausada. Para escutar na rede é obrigatório definir `PANEL_USER` e `PANEL_PASSWORD` (HTTP Basic, comparação em tempo constante); sem isso ele se recusa a subir. Jobs só referenciam scripts que existem no `package.json` dos workspaces permitidos, e qualquer outro valor é recusado com HTTP 400.
 - **Retry só na CI:** localmente, uma falha aparece na primeira vez. Na CI, uma nova tentativa absorve a instabilidade do emulador sem GPU.
 
 ## Licença
