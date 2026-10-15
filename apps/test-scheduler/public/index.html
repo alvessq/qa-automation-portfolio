@@ -39,6 +39,18 @@
 
       <section>
         <div class="section-head">
+          <h2>Triagem de falhas</h2>
+          <span class="muted" id="triage-channels"></span>
+        </div>
+        <p class="muted">
+          Quando um job com triagem falha, ele é repetido antes de qualquer aviso. Falhou em todas: bug.
+          Passou em alguma: falha passageira. O ambiente caiu: problema de ambiente.
+        </p>
+        <ul id="triage" class="history"></ul>
+      </section>
+
+      <section>
+        <div class="section-head">
           <h2>Histórico</h2>
           <button id="clear-history" class="btn btn-ghost">Limpar</button>
         </div>

@@ -92,6 +92,38 @@ async function renderHistory() {
   );
 }
 
+const VERDICT_TEXT = { bug: 'bug confirmado', flaky: 'falha passageira', environment: 'problema de ambiente' };
+const VERDICT_STATUS = { bug: 'failed', flaky: 'running', environment: 'idle' };
+
+async function renderTriage() {
+  const { channels, active, verdicts } = await api('/api/triage');
+  const enabled = [channels.github && 'GitHub Issues', channels.webhook && 'webhook'].filter(Boolean);
+  $('#triage-channels').textContent = enabled.length ? `avisos: ${enabled.join(' e ')}` : 'avisos só no painel';
+
+  const activeItems = active.map((session) =>
+    el(
+      'li',
+      {},
+      statusBadge('running'),
+      el('span', {}, session.jobName),
+      el('span', { className: 'muted' }, `repetindo · ${session.attempts.length}/${session.retries}`),
+    ),
+  );
+  const verdictItems = verdicts.slice(0, 20).map((verdict) => {
+    const issue = verdict.notification?.issue;
+    return el(
+      'li',
+      {},
+      el('span', { className: `status status-${VERDICT_STATUS[verdict.kind]}` }, VERDICT_TEXT[verdict.kind]),
+      el('span', {}, verdict.jobName),
+      el('span', { className: 'muted' }, `${fmtDate(verdict.decidedAt)} · ${verdict.attempts.length} repetição(ões) · ${verdict.signature}`),
+      issue ? el('a', { className: 'btn btn-ghost', href: issue.url, target: '_blank', rel: 'noopener' }, `Issue #${issue.number}`) : '',
+    );
+  });
+  const items = [...activeItems, ...verdictItems];
+  $('#triage').replaceChildren(...(items.length ? items : [el('li', { className: 'empty' }, 'Nenhuma falha em triagem.')]));
+}
+
 async function openLog(runId) {
   const run = await api(`/api/history/${runId}`);
   $('#log-title').textContent = `${run.jobName} — ${run.status}`;
@@ -106,7 +138,7 @@ async function refresh() {
   pauseButton.textContent = status.paused ? 'Retomar agenda' : 'Pausar agenda';
   pauseButton.onclick = () => api('/api/pause', { method: 'POST', body: { paused: !status.paused } }).then(refresh);
   renderJobs(status);
-  await renderHistory();
+  await Promise.all([renderTriage(), renderHistory()]);
 }
 
 $('#log-close').addEventListener('click', () => $('#log-dialog').close());
