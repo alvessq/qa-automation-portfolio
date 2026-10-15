@@ -1,0 +1,48 @@
+name: Web Monitoring
+
+# Monitoramento sintético: health check + smoke em intervalos fixos.
+on:
+  schedule:
+    - cron: '0 11,17,23 * * 1-5' # 08h, 14h e 20h (America/Sao_Paulo), dias úteis
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-monitoring
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: Health + smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Health check
+        run: npm run health:web
+
+      - name: Instalar Chromium
+        run: npm run browsers:install -w web-e2e
+
+      - name: Smoke (@smoke)
+        run: npm run test:web:smoke
+
+      - name: Publicar relatório
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-monitoring-${{ github.run_id }}
+          path: apps/web-e2e/playwright-report/
+          retention-days: 7

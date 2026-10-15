@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: Typecheck e testes unitários
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck (mobile e web)
+        run: npm run typecheck
+
+      - name: Testes unitários do agendador
+        run: npm run test:unit
+
+  web-e2e:
+    name: Web E2E (Playwright)
+    needs: static
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Health check do site alvo
+        run: npm run health:web
+
+      - name: Instalar Chromium
+        run: npm run browsers:install -w web-e2e
+
+      - name: Executar testes
+        run: npm run test:web
+
+      - name: Publicar relatório
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-e2e-report-${{ github.run_id }}
+          path: |
+            apps/web-e2e/playwright-report/
+            apps/web-e2e/test-results/
+          retention-days: 14
