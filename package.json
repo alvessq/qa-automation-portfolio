@@ -1,0 +1,31 @@
+{
+  "name": "qa-automation-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Portfólio de automação de testes: mobile (Appium + WebdriverIO), web (Playwright) e agendador de execuções.",
+  "author": "alvessq",
+  "license": "MIT",
+  "workspaces": [
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test:unit": "npm run test:unit --workspaces --if-present",
+
+    "mobile:setup": "npm run appium:setup -w mobile-e2e && npm run apk:download -w mobile-e2e",
+    "mobile:doctor": "npm run doctor -w mobile-e2e",
+    "test:mobile": "npm run test -w mobile-e2e",
+    "test:mobile:smoke": "npm run suite:smoke -w mobile-e2e",
+    "test:mobile:regression": "npm run suite:regression -w mobile-e2e",
+
+    "test:web": "npm run test -w web-e2e",
+    "test:web:smoke": "npm run test:smoke -w web-e2e",
+    "health:web": "npm run health -w web-e2e",
+    "report:web": "npm run report -w web-e2e",
+
+    "scheduler": "npm start -w test-scheduler"
+  }
+}

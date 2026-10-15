@@ -1,0 +1,25 @@
+node_modules/
+.env
+*.log
+
+# Mobile
+apps/mobile-e2e/apps/*.apk
+apps/mobile-e2e/apps/*.apk.json
+apps/mobile-e2e/.appium/
+apps/mobile-e2e/test-results/
+
+# Web
+apps/web-e2e/test-results/
+apps/web-e2e/playwright-report/
+apps/web-e2e/.auth/
+
+# Scheduler
+apps/test-scheduler/data/
+
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+
+# Instrucoes locais do Claude (nao publicar)
+CLAUDE.md
