@@ -7,6 +7,7 @@
   "scripts": {
     "appium:setup": "node scripts/install-driver.mjs",
     "apk:download": "node scripts/download-apk.mjs",
+    "prepare:device": "node scripts/prepare.mjs",
     "doctor": "node scripts/doctor.mjs",
     "typecheck": "tsc --noEmit",
     "test:unit": "node --test \"scripts/**/*.test.mjs\"",
