@@ -39,6 +39,14 @@
 
       <section>
         <div class="section-head">
+          <h2>Configuração</h2>
+          <span class="muted" id="config-summary"></span>
+        </div>
+        <ul id="config" class="history"></ul>
+      </section>
+
+      <section>
+        <div class="section-head">
           <h2>Triagem de falhas</h2>
           <span class="muted" id="triage-channels"></span>
         </div>
@@ -64,6 +72,14 @@
         <button class="btn btn-ghost" id="log-close">Fechar</button>
       </div>
       <pre id="log-output"></pre>
+    </dialog>
+
+    <dialog id="catalog-dialog">
+      <div class="dialog-head">
+        <strong id="catalog-title"></strong>
+        <button class="btn btn-ghost" id="catalog-close">Fechar</button>
+      </div>
+      <div id="catalog-body" class="catalog"></div>
     </dialog>
 
     <script type="module" src="app.js"></script>

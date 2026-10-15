@@ -87,3 +87,8 @@ dialog { width: min(900px, 95vw); border: 1px solid var(--border); border-radius
 dialog::backdrop { background: rgb(0 0 0 / .4); }
 .dialog-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); }
 pre { margin: 0; padding: 16px; max-height: 70vh; overflow: auto; font-size: 12px; white-space: pre-wrap; }
+
+.actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+.catalog { padding: 8px 16px 16px; max-height: 70vh; overflow: auto; }
+.catalog h3 { font-size: 14px; margin: 14px 0 6px; }
+.catalog ul { margin: 0; padding-left: 20px; display: grid; gap: 2px; }

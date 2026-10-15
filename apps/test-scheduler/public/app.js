@@ -66,7 +66,7 @@ function renderJobs(status) {
       el('td', {}, job.window ? `${job.window.from}–${job.window.to}` : 'sempre'),
       el('td', {}, last),
       el('td', {}, fmtDate(job.nextRunAt)),
-      el('td', {}, action),
+      el('td', { className: 'actions' }, el('button', { className: 'btn btn-ghost', onclick: () => openCatalog(job) }, 'O que testa'), action),
     );
   });
   $('#jobs').replaceChildren(...rows);
@@ -124,6 +124,48 @@ async function renderTriage() {
   $('#triage').replaceChildren(...(items.length ? items : [el('li', { className: 'empty' }, 'Nenhuma falha em triagem.')]));
 }
 
+async function openCatalog(job) {
+  const features = await api(`/api/jobs/${job.id}/catalog`);
+  const total = features.reduce((sum, f) => sum + f.scenarios.length, 0);
+  $('#catalog-title').textContent = `${job.name} — ${total} cenário(s)`;
+  $('#catalog-body').replaceChildren(
+    ...(features.length
+      ? features.map((feature) =>
+          el(
+            'section',
+            {},
+            el('h3', {}, feature.feature, el('span', { className: 'muted' }, ` · ${feature.file}`)),
+            el('ul', {}, ...feature.scenarios.map((s) => el('li', {}, s.title))),
+          ),
+        )
+      : [el('p', { className: 'muted' }, 'Não foi possível listar os cenários deste script.')]),
+  );
+  $('#catalog-dialog').showModal();
+}
+
+const CONFIG_STATUS = { missing: 'failed', partial: 'running' };
+let configLoaded = false;
+
+async function renderConfig() {
+  if (configLoaded) return;
+  const report = await api('/api/config');
+  configLoaded = true;
+  const pending = report.filter((item) => item.status !== 'ok' && item.kind !== 'default');
+  $('#config-summary').textContent = pending.length ? `${pending.length} item(ns) desligado(s)` : 'tudo configurado';
+  const items = pending.map((item) =>
+    el(
+      'li',
+      {},
+      el('span', { className: `status status-${CONFIG_STATUS[item.status]}` }, item.status === 'partial' ? 'incompleto' : 'ausente'),
+      el('code', {}, item.names.join(item.anyOf ? ' ou ' : ' + ')),
+      el('span', { className: 'muted' }, `${item.workspace} · ${item.impact}`),
+    ),
+  );
+  $('#config').replaceChildren(
+    ...(items.length ? items : [el('li', { className: 'empty' }, 'Nenhuma configuração pendente. Os valores nunca são exibidos.')]),
+  );
+}
+
 async function openLog(runId) {
   const run = await api(`/api/history/${runId}`);
   $('#log-title').textContent = `${run.jobName} — ${run.status}`;
@@ -133,15 +175,18 @@ async function openLog(runId) {
 
 async function refresh() {
   const status = await api('/api/status');
-  $('#subtitle').textContent = `Fuso ${status.timeZone} · ${status.queue.length} na fila`;
+  $('#subtitle').textContent = status.paused
+    ? `Agenda pausada: nada roda sozinho até você retomar · fuso ${status.timeZone}`
+    : `Fuso ${status.timeZone} · ${status.queue.length} na fila`;
   const pauseButton = $('#pause-toggle');
   pauseButton.textContent = status.paused ? 'Retomar agenda' : 'Pausar agenda';
   pauseButton.onclick = () => api('/api/pause', { method: 'POST', body: { paused: !status.paused } }).then(refresh);
   renderJobs(status);
-  await Promise.all([renderTriage(), renderHistory()]);
+  await Promise.all([renderConfig(), renderTriage(), renderHistory()]);
 }
 
 $('#log-close').addEventListener('click', () => $('#log-dialog').close());
+$('#catalog-close').addEventListener('click', () => $('#catalog-dialog').close());
 $('#clear-history').addEventListener('click', async () => {
   if (confirm('Apagar todo o histórico de execuções?')) {
     await api('/api/history', { method: 'DELETE' });
