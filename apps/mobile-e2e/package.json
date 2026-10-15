@@ -1,0 +1,37 @@
+{
+  "name": "mobile-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Testes E2E do Sauce Labs My Demo App (Android) com Appium + WebdriverIO + TypeScript.",
+  "type": "module",
+  "scripts": {
+    "appium:setup": "node scripts/install-driver.mjs",
+    "apk:download": "node scripts/download-apk.mjs",
+    "doctor": "node scripts/doctor.mjs",
+    "typecheck": "tsc --noEmit",
+    "pretest": "npm run doctor",
+    "test": "wdio run ./wdio.conf.ts",
+    "test:spec": "wdio run ./wdio.conf.ts --spec",
+    "presuite:smoke": "npm run doctor",
+    "suite:smoke": "node scripts/run-suite.mjs smoke",
+    "presuite:regression": "npm run doctor",
+    "suite:regression": "node scripts/run-suite.mjs regression"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^24.0.0",
+    "@wdio/appium-service": "^9.20.0",
+    "@wdio/cli": "^9.20.0",
+    "@wdio/globals": "^9.20.0",
+    "@wdio/junit-reporter": "^9.20.0",
+    "@wdio/local-runner": "^9.20.0",
+    "@wdio/mocha-framework": "^9.20.0",
+    "@wdio/spec-reporter": "^9.20.0",
+    "appium": "^3.8.0",
+    "dotenv": "^17.2.0",
+    "expect-webdriverio": "^6.0.9",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "webdriverio": "^9.20.0"
+  }
+}

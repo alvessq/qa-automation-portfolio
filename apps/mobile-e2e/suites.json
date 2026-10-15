@@ -1,0 +1,4 @@
+{
+  "smoke": ["catalog", "login"],
+  "regression": ["catalog", "login", "product-details", "cart", "checkout", "logout"]
+}
