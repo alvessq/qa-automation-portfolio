@@ -9,6 +9,9 @@ import { createStore } from './store.mjs';
 import { createRunner } from './runner.mjs';
 import { createTriage, DEFAULT_RETRIES } from './triage.mjs';
 import { createNotifier } from './notifier.mjs';
+import { catalogFor } from './test-catalog.mjs';
+import { diagnose, effectiveEnv, summarize } from './env-doctor.mjs';
+import { basicAuth, exposureError, startPaused } from './safety.mjs';
 
 const APP_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO_ROOT = path.resolve(APP_DIR, '..', '..');
@@ -17,6 +20,17 @@ dotenv.config({ path: path.join(APP_DIR, '.env'), quiet: true });
 const HOST = process.env.HOST || '127.0.0.1';
 const PORT = Number(process.env.PORT) || 7400;
 const TIME_ZONE = process.env.SCHEDULER_TZ || 'America/Sao_Paulo';
+const APPS_DIR = path.join(REPO_ROOT, 'apps');
+const PANEL_LOGIN = { user: process.env.PANEL_USER, password: process.env.PANEL_PASSWORD };
+
+const exposure = exposureError(HOST, PANEL_LOGIN);
+if (exposure) {
+  console.error(`[scheduler] ${exposure}`);
+  process.exit(1);
+}
+
+const configReport = diagnose(effectiveEnv(APPS_DIR));
+for (const line of summarize(configReport)) console.log(line);
 
 const store = createStore({
   configFile: path.join(APP_DIR, 'config.json'),
@@ -48,9 +62,9 @@ const runner = createRunner({
     }
   },
 });
-const availableScripts = loadAvailableScripts(path.join(REPO_ROOT, 'apps'));
+const availableScripts = loadAvailableScripts(APPS_DIR);
 
-let paused = process.env.START_PAUSED === 'true';
+let paused = startPaused(process.env);
 
 // Tick a cada minuto: enfileira os jobs ativos, dentro da janela e vencidos.
 cron.schedule(
@@ -66,6 +80,7 @@ cron.schedule(
 );
 
 const app = express();
+app.use(basicAuth(PANEL_LOGIN));
 app.use(express.json({ limit: '32kb' }));
 app.use(express.static(path.join(APP_DIR, 'public')));
 
@@ -90,6 +105,14 @@ app.get('/api/status', (_req, res) => {
 });
 
 app.get('/api/scripts', (_req, res) => res.json(availableScripts));
+
+app.get('/api/config', (_req, res) => res.json(configReport));
+
+app.get('/api/jobs/:id/catalog', (req, res) => {
+  const job = store.getJob(req.params.id);
+  if (!job) return res.status(404).json({ error: 'job não encontrado' });
+  res.json(catalogFor(job, APPS_DIR));
+});
 
 app.get('/api/history', (_req, res) => {
   res.json(store.listHistory().map(({ output: _output, ...run }) => run));
