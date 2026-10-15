@@ -5,18 +5,21 @@ import { randomUUID } from 'node:crypto';
 
 const OUTPUT_TAIL_CHARS = 20_000;
 
-export function createRunner({ store, repoRoot, onChange = () => {} }) {
+export function createRunner({ store, repoRoot, onChange = () => {}, onFinish = () => {} }) {
   const queue = [];
   let current = null;
 
-  function enqueue(job, trigger) {
+  /** `front: true` fura a fila (usado pelas repetições da triagem). */
+  function enqueue(job, trigger, { front = false } = {}) {
     if (current?.job.id === job.id || queue.some((item) => item.job.id === job.id)) {
       return { queued: false, reason: 'job já está em execução ou na fila' };
     }
-    queue.push({ job, trigger, queuedAt: new Date().toISOString() });
+    const item = { job, trigger, queuedAt: new Date().toISOString() };
+    if (front) queue.unshift(item);
+    else queue.push(item);
     onChange();
     setImmediate(next);
-    return { queued: true, position: queue.length };
+    return { queued: true, position: front ? 1 : queue.length };
   }
 
   function dequeue(jobId) {
@@ -79,6 +82,7 @@ export function createRunner({ store, repoRoot, onChange = () => {} }) {
       store.saveRun(run);
       current = null;
       onChange();
+      onFinish(job, run);
       setImmediate(next);
     });
   }

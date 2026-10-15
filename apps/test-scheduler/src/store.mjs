@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export function createStore({ configFile, historyFile, historyLimit }) {
+export function createStore({ configFile, historyFile, historyLimit, verdictsFile, verdictsLimit = 100 }) {
   const readJson = (file, fallback) => {
     try {
       return JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -21,6 +21,7 @@ export function createStore({ configFile, historyFile, historyLimit }) {
 
   let jobs = readJson(configFile, { jobs: [] }).jobs;
   let history = readJson(historyFile, []);
+  let verdicts = verdictsFile ? readJson(verdictsFile, []) : [];
 
   return {
     listJobs: () => jobs,
@@ -57,6 +58,16 @@ export function createStore({ configFile, historyFile, historyLimit }) {
     clearHistory() {
       history = [];
       writeJson(historyFile, history);
+    },
+
+    listVerdicts: () => verdicts,
+
+    /** Vereditos da triagem, do mais novo para o mais antigo. */
+    saveVerdict(verdict) {
+      const index = verdicts.findIndex((v) => v.id === verdict.id);
+      verdicts = index === -1 ? [verdict, ...verdicts] : verdicts.map((v, i) => (i === index ? verdict : v));
+      verdicts = verdicts.slice(0, verdictsLimit);
+      if (verdictsFile) writeJson(verdictsFile, verdicts);
     },
   };
 }

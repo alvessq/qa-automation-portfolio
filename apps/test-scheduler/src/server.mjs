@@ -7,6 +7,8 @@ import { isDue, nextRunAt } from './schedule-window.mjs';
 import { loadAvailableScripts, validateJob } from './job-validation.mjs';
 import { createStore } from './store.mjs';
 import { createRunner } from './runner.mjs';
+import { createTriage, DEFAULT_RETRIES } from './triage.mjs';
+import { createNotifier } from './notifier.mjs';
 
 const APP_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO_ROOT = path.resolve(APP_DIR, '..', '..');
@@ -20,8 +22,32 @@ const store = createStore({
   configFile: path.join(APP_DIR, 'config.json'),
   historyFile: path.join(APP_DIR, 'data', 'history.json'),
   historyLimit: Number(process.env.HISTORY_LIMIT) || 200,
+  verdictsFile: path.join(APP_DIR, 'data', 'triage.json'),
 });
-const runner = createRunner({ store, repoRoot: REPO_ROOT });
+
+const triage = createTriage({ retries: Number(process.env.TRIAGE_RETRIES ?? DEFAULT_RETRIES) });
+const notifier = createNotifier({
+  repository: process.env.GITHUB_REPOSITORY,
+  token: process.env.GITHUB_TOKEN,
+  webhookUrl: process.env.TRIAGE_WEBHOOK_URL,
+});
+
+const runner = createRunner({
+  store,
+  repoRoot: REPO_ROOT,
+  onFinish(job, run) {
+    const step = triage.handle(job, run);
+    if (step.action === 'retry') {
+      console.log(`[triagem] ${job.name}: repetição ${step.attempt}`);
+      runner.enqueue(job, 'triagem', { front: true });
+    } else if (step.action === 'verdict') {
+      const { verdict } = step;
+      store.saveVerdict({ ...verdict, notification: { pending: true } });
+      console.log(`[triagem] ${job.name}: ${verdict.kind}`);
+      notifier.notify(verdict, run.output).then((notification) => store.saveVerdict({ ...verdict, notification }));
+    }
+  },
+});
 const availableScripts = loadAvailableScripts(path.join(REPO_ROOT, 'apps'));
 
 let paused = process.env.START_PAUSED === 'true';
@@ -75,6 +101,10 @@ app.get('/api/history/:runId', (req, res) => {
   res.json({ ...run, output: runner.liveOutput(run.runId) ?? run.output });
 });
 
+app.get('/api/triage', (_req, res) => {
+  res.json({ channels: notifier.channels, active: triage.active(), verdicts: store.listVerdicts() });
+});
+
 app.delete('/api/history', (_req, res) => {
   store.clearHistory();
   res.status(204).end();
@@ -93,6 +123,7 @@ app.post('/api/jobs/:id/run', (req, res) => {
 });
 
 app.post('/api/jobs/:id/stop', (req, res) => {
+  triage.cancel(req.params.id);
   const stopped = runner.stop(req.params.id) || runner.dequeue(req.params.id);
   res.status(stopped ? 200 : 409).json({ stopped });
 });
@@ -118,6 +149,7 @@ app.patch('/api/jobs/:id/enabled', (req, res) => {
 });
 
 app.delete('/api/jobs/:id', (req, res) => {
+  triage.cancel(req.params.id);
   runner.dequeue(req.params.id);
   res.status(store.deleteJob(req.params.id) ? 204 : 404).end();
 });

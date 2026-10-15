@@ -21,6 +21,12 @@ describe('validateJob', () => {
     assert.deepEqual(job.window, { from: '08:00', to: '18:00' });
   });
 
+  it('triagem fica desligada a menos que seja pedida explicitamente', () => {
+    assert.equal(validateJob(valid, scripts).job.triage, false);
+    assert.equal(validateJob({ ...valid, triage: 'sim' }, scripts).job.triage, false);
+    assert.equal(validateJob({ ...valid, triage: true }, scripts).job.triage, true);
+  });
+
   it('aceita job sem janela', () => {
     const { job } = validateJob({ ...valid, window: null }, scripts);
     assert.equal(job.window, null);

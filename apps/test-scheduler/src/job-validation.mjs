@@ -36,6 +36,8 @@ export function validateJob(input, availableScripts) {
     window: input?.window ? { from: String(input.window.from), to: String(input.window.to) } : null,
     timeoutMinutes: Number(input?.timeoutMinutes ?? 15),
     enabled: input?.enabled !== false,
+    // Repetir antes de avisar só faz sentido para suítes E2E; health check falha rápido.
+    triage: input?.triage === true,
   };
 
   if (!ID_PATTERN.test(job.id)) errors.push('id deve ter 2–41 caracteres: letras minúsculas, números e hífen');

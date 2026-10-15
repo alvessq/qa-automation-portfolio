@@ -6,9 +6,13 @@
       "workspace": "web-e2e",
       "script": "health",
       "intervalMinutes": 5,
-      "window": { "from": "07:00", "to": "22:00" },
+      "window": {
+        "from": "07:00",
+        "to": "22:00"
+      },
       "timeoutMinutes": 2,
-      "enabled": true
+      "enabled": true,
+      "triage": false
     },
     {
       "id": "web-smoke",
@@ -16,9 +20,13 @@
       "workspace": "web-e2e",
       "script": "test:smoke",
       "intervalMinutes": 60,
-      "window": { "from": "08:00", "to": "20:00" },
+      "window": {
+        "from": "08:00",
+        "to": "20:00"
+      },
       "timeoutMinutes": 10,
-      "enabled": true
+      "enabled": true,
+      "triage": true
     },
     {
       "id": "web-regression",
@@ -28,7 +36,8 @@
       "intervalMinutes": 360,
       "window": null,
       "timeoutMinutes": 20,
-      "enabled": false
+      "enabled": false,
+      "triage": true
     },
     {
       "id": "mobile-smoke",
@@ -36,9 +45,13 @@
       "workspace": "mobile-e2e",
       "script": "suite:smoke",
       "intervalMinutes": 120,
-      "window": { "from": "09:00", "to": "18:00" },
+      "window": {
+        "from": "09:00",
+        "to": "18:00"
+      },
       "timeoutMinutes": 20,
-      "enabled": false
+      "enabled": false,
+      "triage": true
     }
   ]
 }
