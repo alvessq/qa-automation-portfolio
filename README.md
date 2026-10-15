@@ -98,6 +98,8 @@ npm run test:mobile           # todas as specs
 
 **Falhou só na CI?** `npm run ci:local -w mobile-e2e` sobe um emulador sem janela e sem GPU (renderização por software), na porta 5556, e roda a suíte com os timeouts e a nova tentativa da CI. Use `-- regression` para outra suíte e `-- smoke --gpu` para comparar com a GPU ligada. Investigar aqui não gasta minutos do GitHub Actions.
 
+**Emulador lento depois de muitas suítes?** Antes de cada suíte local, o emulador é reiniciado a cada 3 execuções, sem apagar os dados (`EMULATOR_RECYCLE_EVERY`; `EMULATOR_RECYCLE=false` desliga). Na CI não se aplica, porque cada execução já começa com um emulador novo.
+
 **Emulador caiu no meio da suíte?** Um vigia pergunta ao `adb` a cada 15 s se o device responde. Depois de duas falhas seguidas, a suíte é encerrada na hora com a mensagem `device offline` (código de saída 3), em vez de cada teste esperar o próprio timeout. A triagem do agendador reconhece essa mensagem como problema de ambiente.
 
 O WebdriverIO sobe o servidor Appium sozinho, na porta 4723. Para rodar uma spec isolada:
@@ -114,7 +116,8 @@ Evidências ficam em `apps/mobile-e2e/test-results/`: `junit/`, `screenshots/`, 
 npm run browsers:install -w web-e2e   # primeira vez
 npm run test:web                       # suíte completa
 npm run test:web:smoke                 # apenas @smoke
-npm run health:web                     # health check do site
+npm run health:web                     # 5 conferências do site, cada uma com seu resultado
+npm run health:web -- imagens catalogo  # só as conferências escolhidas
 npm run report:web                     # abre o relatório HTML
 ```
 
@@ -128,6 +131,8 @@ Os jobs ficam em [`apps/test-scheduler/config.json`](apps/test-scheduler/config.
 
 - **O que cada job testa:** o botão "O que testa" lista, em português, as funcionalidades e os cenários que o script executa, lidos dos próprios arquivos de teste (inclusive o filtro por `@smoke` e as suítes do `suites.json`). Quem não lê código entende o que passou ou falhou.
 - **Configuração conferida na subida:** o painel e o log listam as variáveis que faltam e o que cada ausência desliga, sem nunca mostrar os valores. Os `.env` ficam fora do Git, então depois de um clone novo essa é a pista do que repor.
+- **Celular preparado sozinho:** se houver job mobile ativo, ao abrir o painel ele confere se saiu um APK novo e, se nenhum device estiver online, liga um emulador em segundo plano (`PREPARE_MOBILE`). O botão "Preparar celular agora" faz o mesmo sob demanda; pelo terminal, `npm run prepare:device -w mobile-e2e`.
+- **Nuvem pelo painel:** a seção "Execuções na nuvem" mostra as últimas execuções de cada workflow do GitHub Actions e permite disparar um deles (com a suíte, no caso do mobile). Também dá para criar **jobs de nuvem** (`"target": "cloud"`), que seguem a mesma agenda e janela de horário dos jobs locais, mas disparam o workflow em vez de rodar na máquina.
 - **Abre pausado:** abrir o painel não dispara nenhuma suíte. Retomar a agenda é uma decisão explícita (`START_PAUSED=false` muda o padrão; na CI ela nunca começa pausada).
 
 #### Triagem de falhas
