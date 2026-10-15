@@ -1,0 +1,23 @@
+{
+  "name": "web-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Testes E2E web do Sauce Demo (saucedemo.com) com Playwright + TypeScript.",
+  "type": "module",
+  "scripts": {
+    "browsers:install": "playwright install --with-deps chromium",
+    "typecheck": "tsc --noEmit",
+    "test": "playwright test",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report",
+    "health": "node scripts/health.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^24.0.0",
+    "dotenv": "^17.2.0",
+    "typescript": "^5.9.0"
+  }
+}
