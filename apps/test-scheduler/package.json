@@ -1,0 +1,17 @@
+{
+  "name": "test-scheduler",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Agenda e acompanha execuções das suítes de teste, com fila serial, janela de horário e painel web.",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.mjs",
+    "dev": "node --watch src/server.mjs",
+    "test:unit": "node --test \"test/**/*.test.mjs\""
+  },
+  "dependencies": {
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "node-cron": "^4.2.0"
+  }
+}

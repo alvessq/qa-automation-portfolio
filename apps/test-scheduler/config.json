@@ -1,0 +1,44 @@
+{
+  "jobs": [
+    {
+      "id": "web-health",
+      "name": "Web · health check",
+      "workspace": "web-e2e",
+      "script": "health",
+      "intervalMinutes": 5,
+      "window": { "from": "07:00", "to": "22:00" },
+      "timeoutMinutes": 2,
+      "enabled": true
+    },
+    {
+      "id": "web-smoke",
+      "name": "Web · smoke",
+      "workspace": "web-e2e",
+      "script": "test:smoke",
+      "intervalMinutes": 60,
+      "window": { "from": "08:00", "to": "20:00" },
+      "timeoutMinutes": 10,
+      "enabled": true
+    },
+    {
+      "id": "web-regression",
+      "name": "Web · regressão completa",
+      "workspace": "web-e2e",
+      "script": "test",
+      "intervalMinutes": 360,
+      "window": null,
+      "timeoutMinutes": 20,
+      "enabled": false
+    },
+    {
+      "id": "mobile-smoke",
+      "name": "Mobile · smoke (requer emulador)",
+      "workspace": "mobile-e2e",
+      "script": "suite:smoke",
+      "intervalMinutes": 120,
+      "window": { "from": "09:00", "to": "18:00" },
+      "timeoutMinutes": 20,
+      "enabled": false
+    }
+  ]
+}
