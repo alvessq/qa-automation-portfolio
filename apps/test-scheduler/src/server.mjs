@@ -6,7 +6,8 @@ import cron from 'node-cron';
 import { isDue, nextRunAt } from './schedule-window.mjs';
 import { loadAvailableScripts, validateJob } from './job-validation.mjs';
 import { createStore } from './store.mjs';
-import { createRunner } from './runner.mjs';
+import { createRunner, spawnNpmScript } from './runner.mjs';
+import { createPreparer, shouldPrepare } from './prepare.mjs';
 import { createTriage, DEFAULT_RETRIES } from './triage.mjs';
 import { createNotifier } from './notifier.mjs';
 import { catalogFor } from './test-catalog.mjs';
@@ -66,6 +67,12 @@ const availableScripts = loadAvailableScripts(APPS_DIR);
 
 let paused = startPaused(process.env);
 
+const preparer = createPreparer({ spawnScript: (workspace, script) => spawnNpmScript(workspace, script, REPO_ROOT) });
+if (shouldPrepare(process.env, store.listJobs())) {
+  console.log('[preparo] conferindo APK e emulador em segundo plano…');
+  preparer.start();
+}
+
 // Tick a cada minuto: enfileira os jobs ativos, dentro da janela e vencidos.
 cron.schedule(
   '* * * * *',
@@ -107,6 +114,13 @@ app.get('/api/status', (_req, res) => {
 app.get('/api/scripts', (_req, res) => res.json(availableScripts));
 
 app.get('/api/config', (_req, res) => res.json(configReport));
+
+app.get('/api/prepare', (_req, res) => res.json(preparer.state()));
+
+app.post('/api/prepare', (_req, res) => {
+  const started = preparer.start();
+  res.status(started ? 202 : 409).json(preparer.state());
+});
 
 app.get('/api/jobs/:id/catalog', (req, res) => {
   const job = store.getJob(req.params.id);

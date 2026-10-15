@@ -166,6 +166,21 @@ async function renderConfig() {
   );
 }
 
+const PREPARE_TEXT = {
+  idle: 'Celular: não preparado nesta sessão (só prepara sozinho quando há job mobile ativo).',
+  running: 'Celular: preparando — conferindo o APK e ligando o emulador se precisar…',
+  ready: 'Celular: pronto (APK em dia e device online).',
+  failed: 'Celular: a preparação falhou. Veja o log.',
+};
+
+async function renderPrepare() {
+  const state = await api('/api/prepare');
+  const status = $('#prepare-status');
+  status.textContent = PREPARE_TEXT[state.status];
+  status.title = state.output ? state.output.slice(-1500) : '';
+  $('#prepare-btn').disabled = state.status === 'running';
+}
+
 async function openLog(runId) {
   const run = await api(`/api/history/${runId}`);
   $('#log-title').textContent = `${run.jobName} — ${run.status}`;
@@ -182,11 +197,12 @@ async function refresh() {
   pauseButton.textContent = status.paused ? 'Retomar agenda' : 'Pausar agenda';
   pauseButton.onclick = () => api('/api/pause', { method: 'POST', body: { paused: !status.paused } }).then(refresh);
   renderJobs(status);
-  await Promise.all([renderConfig(), renderTriage(), renderHistory()]);
+  await Promise.all([renderConfig(), renderPrepare(), renderTriage(), renderHistory()]);
 }
 
 $('#log-close').addEventListener('click', () => $('#log-dialog').close());
 $('#catalog-close').addEventListener('click', () => $('#catalog-dialog').close());
+$('#prepare-btn').addEventListener('click', () => api('/api/prepare', { method: 'POST' }).then(refresh));
 $('#clear-history').addEventListener('click', async () => {
   if (confirm('Apagar todo o histórico de execuções?')) {
     await api('/api/history', { method: 'DELETE' });

@@ -103,7 +103,7 @@ export function createRunner({ store, repoRoot, onChange = () => {}, onFinish = 
  * `npm run <script> -w <workspace>` a partir da raiz do monorepo. Workspace e
  * script já foram validados contra os package.json (job-validation.mjs).
  */
-function spawnNpmScript(workspace, script, cwd) {
+export function spawnNpmScript(workspace, script, cwd) {
   const npmCli = process.env.npm_execpath;
   const args = ['run', script, '-w', workspace];
   const options = { cwd, env: { ...process.env, FORCE_COLOR: '0' }, detached: process.platform !== 'win32' };
