@@ -46,9 +46,13 @@ function renderJobs(status) {
     });
     toggle.checked = job.enabled;
 
+    const cloud = job.target === 'cloud';
     const action = state
       ? el('button', { className: 'btn btn-ghost', onclick: () => api(`/api/jobs/${job.id}/stop`, { method: 'POST' }).then(refresh) }, 'Parar')
-      : el('button', { className: 'btn', onclick: () => api(`/api/jobs/${job.id}/run`, { method: 'POST' }).then(refresh) }, 'Executar');
+      : el('button', { className: 'btn', onclick: () => api(`/api/jobs/${job.id}/run`, { method: 'POST' }).then(refresh) }, cloud ? 'Disparar' : 'Executar');
+    const target = cloud
+      ? `nuvem › ${job.workflow}${job.inputs?.suite ? ` (${job.inputs.suite})` : ''}`
+      : `${job.workspace} › ${job.script}`;
 
     const last = state
       ? statusBadge(state)
@@ -61,7 +65,7 @@ function renderJobs(status) {
       {},
       el('td', {}, toggle),
       el('td', {}, job.name),
-      el('td', {}, el('code', {}, `${job.workspace} › ${job.script}`)),
+      el('td', {}, el('code', {}, target)),
       el('td', {}, fmtInterval(job.intervalMinutes)),
       el('td', {}, job.window ? `${job.window.from}–${job.window.to}` : 'sempre'),
       el('td', {}, last),
@@ -181,6 +185,52 @@ async function renderPrepare() {
   $('#prepare-btn').disabled = state.status === 'running';
 }
 
+const CLOUD_REFRESH_MS = 60_000;
+let cloudLoadedAt = 0;
+
+function runBadge(run) {
+  if (run.status !== 'completed') return el('span', { className: 'status status-running' }, run.status === 'queued' ? 'na fila' : 'rodando');
+  const ok = run.conclusion === 'success';
+  return el('span', { className: `status status-${ok ? 'passed' : run.conclusion === 'cancelled' ? 'stopped' : 'failed'}` }, run.conclusion);
+}
+
+async function renderCloud(force = false) {
+  if (!force && Date.now() - cloudLoadedAt < CLOUD_REFRESH_MS) return;
+  cloudLoadedAt = Date.now();
+  const data = await api('/api/cloud');
+  $('#cloud-note').textContent = data.configured.dispatch
+    ? 'Disparo liberado (GITHUB_TOKEN configurado).'
+    : 'Só leitura: defina GITHUB_TOKEN com Actions: read and write para disparar.';
+  if (data.error) {
+    $('#cloud').replaceChildren(el('li', { className: 'empty' }, data.error));
+    return;
+  }
+  $('#cloud').replaceChildren(
+    ...data.workflows.map((wf) => {
+      const suite = wf.inputs.suite ? el('select', { 'aria-label': `Suíte de ${wf.name}` }, ...wf.inputs.suite.map((s) => el('option', { value: s }, s))) : null;
+      const dispatch = el(
+        'button',
+        {
+          className: 'btn',
+          ...(data.configured.dispatch ? {} : { disabled: '' }),
+          onclick: async () => {
+            const result = await api(`/api/cloud/${wf.file}/dispatch`, { method: 'POST', body: { inputs: suite ? { suite: suite.value } : {} } });
+            alert(result.error ? `Não foi possível disparar: ${result.error}` : `${wf.name} disparado. A execução aparece aqui em alguns segundos.`);
+            setTimeout(() => renderCloud(true), 5000);
+          },
+        },
+        'Disparar',
+      );
+      const runs = wf.runs.length
+        ? wf.runs.map((run) =>
+            el('div', { className: 'cloud-run' }, runBadge(run), el('a', { href: run.url, target: '_blank', rel: 'noopener' }, run.title), el('span', { className: 'muted' }, `${fmtDate(run.createdAt)} · ${run.event}`)),
+          )
+        : [el('span', { className: 'muted' }, 'Nenhuma execução ainda.')];
+      return el('li', { className: 'cloud-item' }, el('div', { className: 'cloud-head' }, el('strong', {}, wf.name), el('code', {}, wf.file), suite, dispatch), ...runs);
+    }),
+  );
+}
+
 async function openLog(runId) {
   const run = await api(`/api/history/${runId}`);
   $('#log-title').textContent = `${run.jobName} — ${run.status}`;
@@ -197,7 +247,7 @@ async function refresh() {
   pauseButton.textContent = status.paused ? 'Retomar agenda' : 'Pausar agenda';
   pauseButton.onclick = () => api('/api/pause', { method: 'POST', body: { paused: !status.paused } }).then(refresh);
   renderJobs(status);
-  await Promise.all([renderConfig(), renderPrepare(), renderTriage(), renderHistory()]);
+  await Promise.all([renderConfig(), renderPrepare(), renderTriage(), renderCloud(), renderHistory()]);
 }
 
 $('#log-close').addEventListener('click', () => $('#log-dialog').close());

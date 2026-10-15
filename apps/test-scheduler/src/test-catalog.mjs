@@ -55,6 +55,16 @@ function readSpecs(dir, names) {
  *   `node scripts/health.mjs`            → descrição fixa do health check
  */
 export function catalogFor(job, appsDir) {
+  // Job de nuvem: mostra o que o workflow executa, a partir dos mesmos scripts locais.
+  if (job.target === 'cloud') {
+    if (job.workflow === 'mobile-e2e.yml') return catalogFor({ workspace: 'mobile-e2e', script: `suite:${job.inputs?.suite || 'smoke'}` }, appsDir);
+    if (job.workflow === 'ci.yml') return catalogFor({ workspace: 'web-e2e', script: 'test' }, appsDir);
+    if (job.workflow === 'web-monitoring.yml') {
+      return [...HEALTH, ...catalogFor({ workspace: 'web-e2e', script: 'test:smoke' }, appsDir)];
+    }
+    return [];
+  }
+
   const workspaceDir = path.join(appsDir, job.workspace);
   const manifest = path.join(workspaceDir, 'package.json');
   if (!fs.existsSync(manifest)) return [];

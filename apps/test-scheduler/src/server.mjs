@@ -8,6 +8,8 @@ import { loadAvailableScripts, validateJob } from './job-validation.mjs';
 import { createStore } from './store.mjs';
 import { createRunner, spawnNpmScript } from './runner.mjs';
 import { createPreparer, shouldPrepare } from './prepare.mjs';
+import { createGithubActions } from './github-actions.mjs';
+import { randomUUID } from 'node:crypto';
 import { createTriage, DEFAULT_RETRIES } from './triage.mjs';
 import { createNotifier } from './notifier.mjs';
 import { catalogFor } from './test-catalog.mjs';
@@ -67,6 +69,23 @@ const availableScripts = loadAvailableScripts(APPS_DIR);
 
 let paused = startPaused(process.env);
 
+const actions = createGithubActions({ repository: process.env.GITHUB_REPOSITORY, token: process.env.GITHUB_TOKEN });
+
+/** Job de nuvem: dispara o workflow e registra o disparo no histórico. */
+async function dispatchCloudJob(job, trigger) {
+  const now = new Date().toISOString();
+  const run = { runId: randomUUID(), jobId: job.id, jobName: job.name, trigger, status: 'dispatched', startedAt: now, finishedAt: now, durationMs: 0, exitCode: null, output: '' };
+  try {
+    const result = await actions.dispatch(job.workflow, job.inputs);
+    run.output = `[nuvem] ${result.workflow} disparado na branch ${result.ref} com ${JSON.stringify(result.inputs)}. Acompanhe em "Execuções na nuvem".`;
+  } catch (error) {
+    run.status = 'failed';
+    run.output = `[nuvem] não foi possível disparar ${job.workflow}: ${error.message}`;
+  }
+  store.saveRun(run);
+  return run;
+}
+
 const preparer = createPreparer({ spawnScript: (workspace, script) => spawnNpmScript(workspace, script, REPO_ROOT) });
 if (shouldPrepare(process.env, store.listJobs())) {
   console.log('[preparo] conferindo APK e emulador em segundo plano…');
@@ -80,7 +99,9 @@ cron.schedule(
     if (paused) return;
     const now = new Date();
     for (const job of store.listJobs()) {
-      if (isDue(job, store.lastStartedAt(job.id), now, TIME_ZONE)) runner.enqueue(job, 'schedule');
+      if (!isDue(job, store.lastStartedAt(job.id), now, TIME_ZONE)) continue;
+      if (job.target === 'cloud') dispatchCloudJob(job, 'schedule');
+      else runner.enqueue(job, 'schedule');
     }
   },
   { timezone: TIME_ZONE },
@@ -152,9 +173,25 @@ app.post('/api/pause', (req, res) => {
   res.json({ paused });
 });
 
-app.post('/api/jobs/:id/run', (req, res) => {
+app.get('/api/cloud', async (_req, res) => {
+  res.json({ configured: actions.configured, ...(await actions.overview()) });
+});
+
+app.post('/api/cloud/:workflow/dispatch', async (req, res) => {
+  try {
+    res.status(202).json(await actions.dispatch(req.params.workflow, req.body?.inputs));
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/jobs/:id/run', async (req, res) => {
   const job = store.getJob(req.params.id);
   if (!job) return res.status(404).json({ error: 'job não encontrado' });
+  if (job.target === 'cloud') {
+    const run = await dispatchCloudJob(job, 'manual');
+    return res.status(run.status === 'dispatched' ? 202 : 502).json(run);
+  }
   const result = runner.enqueue(job, 'manual');
   res.status(result.queued ? 202 : 409).json(result);
 });

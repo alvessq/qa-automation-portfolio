@@ -52,6 +52,18 @@
       "timeoutMinutes": 20,
       "enabled": false,
       "triage": true
+    },
+    {
+      "id": "nuvem-mobile-smoke",
+      "name": "Nuvem · mobile smoke no emulador do GitHub",
+      "target": "cloud",
+      "workflow": "mobile-e2e.yml",
+      "inputs": {
+        "suite": "smoke"
+      },
+      "intervalMinutes": 360,
+      "window": null,
+      "enabled": false
     }
   ]
 }

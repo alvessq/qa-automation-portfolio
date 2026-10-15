@@ -17,7 +17,7 @@ export const ENV_CHECKS = [
   { workspace: 'web-e2e', names: ['SAUCE_STANDARD_USER', 'SAUCE_PASSWORD'], kind: 'default', impact: 'usa as credenciais públicas do site' },
   { workspace: 'mobile-e2e', anyOf: ['ANDROID_HOME', 'ANDROID_SDK_ROOT'], kind: 'required', impact: 'os testes mobile não encontram o Android SDK' },
   { workspace: 'mobile-e2e', names: ['ANDROID_UDID'], kind: 'default', impact: 'usa o primeiro device conectado' },
-  { workspace: 'test-scheduler', names: ['GITHUB_REPOSITORY', 'GITHUB_TOKEN'], kind: 'feature', impact: 'bug confirmado não vira issue no GitHub' },
+  { workspace: 'test-scheduler', names: ['GITHUB_REPOSITORY', 'GITHUB_TOKEN'], kind: 'feature', impact: 'bug confirmado não vira issue e a nuvem não pode ser disparada pelo painel' },
   { workspace: 'test-scheduler', names: ['TRIAGE_WEBHOOK_URL'], kind: 'feature', impact: 'vereditos da triagem não geram aviso por webhook' },
   { workspace: 'test-scheduler', names: ['PANEL_USER', 'PANEL_PASSWORD'], kind: 'feature', impact: 'painel sem login (só é aceito escutando em localhost)' },
 ];
