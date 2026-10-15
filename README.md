@@ -96,6 +96,10 @@ npm run test:mobile:regression
 npm run test:mobile           # todas as specs
 ```
 
+**Falhou só na CI?** `npm run ci:local -w mobile-e2e` sobe um emulador sem janela e sem GPU (renderização por software), na porta 5556, e roda a suíte com os timeouts e a nova tentativa da CI. Use `-- regression` para outra suíte e `-- smoke --gpu` para comparar com a GPU ligada. Investigar aqui não gasta minutos do GitHub Actions.
+
+**Emulador caiu no meio da suíte?** Um vigia pergunta ao `adb` a cada 15 s se o device responde. Depois de duas falhas seguidas, a suíte é encerrada na hora com a mensagem `device offline` (código de saída 3), em vez de cada teste esperar o próprio timeout. A triagem do agendador reconhece essa mensagem como problema de ambiente.
+
 O WebdriverIO sobe o servidor Appium sozinho, na porta 4723. Para rodar uma spec isolada:
 
 ```bash
