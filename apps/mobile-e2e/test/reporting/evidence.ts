@@ -7,7 +7,7 @@ const VIDEOS_DIR = path.join(RESULTS_DIR, 'videos');
 const PAGE_SOURCE_DIR = path.join(RESULTS_DIR, 'page-source');
 
 const recordVideo = () => envFlag('RECORD_VIDEO', true);
-const videosToKeep = () => Number(process.env.VIDEOS_TO_KEEP ?? 5) || 5;
+const videosToKeep = () => Number(process.env.VIDEOS_TO_KEEP ?? 3) || 3;
 
 export async function startVideo(): Promise<void> {
   if (!recordVideo()) return;
@@ -61,14 +61,17 @@ async function savePageSource(base: string): Promise<string[]> {
   return [file];
 }
 
+/** Guarda os N vídeos mais recentes de cada teste (o nome é `<timestamp>_<teste>.mp4`). */
 function pruneOldVideos(): void {
-  const videos = fs
-    .readdirSync(VIDEOS_DIR)
-    .filter((name) => name.endsWith('.mp4'))
-    .sort()
-    .reverse();
-  for (const old of videos.slice(videosToKeep())) {
-    fs.rmSync(path.join(VIDEOS_DIR, old), { force: true });
+  const byTest = new Map<string, string[]>();
+  for (const name of fs.readdirSync(VIDEOS_DIR).filter((n) => n.endsWith('.mp4'))) {
+    const test = name.slice(name.indexOf('_') + 1);
+    byTest.set(test, [...(byTest.get(test) ?? []), name]);
+  }
+  for (const names of byTest.values()) {
+    for (const old of names.sort().reverse().slice(videosToKeep())) {
+      fs.rmSync(path.join(VIDEOS_DIR, old), { force: true });
+    }
   }
 }
 

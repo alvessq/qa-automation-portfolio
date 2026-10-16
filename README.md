@@ -102,13 +102,14 @@ npm run test:mobile           # todas as specs
 
 **Emulador caiu no meio da suíte?** Um vigia pergunta ao `adb` a cada 15 s se o device responde. Depois de duas falhas seguidas, a suíte é encerrada na hora com a mensagem `device offline` (código de saída 3), em vez de cada teste esperar o próprio timeout. A triagem do agendador reconhece essa mensagem como problema de ambiente.
 
-O WebdriverIO sobe o servidor Appium sozinho, na porta 4723. Para rodar uma spec isolada:
+O WebdriverIO sobe o servidor Appium sozinho, na porta 4723. Cada spec também tem o próprio script, com a mesma conferência do ambiente e o mesmo vigia das suítes:
 
 ```bash
-npm run test:spec -w mobile-e2e -- ./test/specs/checkout.spec.ts
+npm run spec:checkout -w mobile-e2e
+npm run health -w mobile-e2e      # celular online, APK e driver do Appium
 ```
 
-Evidências ficam em `apps/mobile-e2e/test-results/`: `junit/`, `screenshots/`, `videos/`, `page-source/`, `logs/` e `summary.json`.
+Evidências ficam em `apps/mobile-e2e/test-results/`: `junit/`, `screenshots/`, `videos/`, `page-source/`, `logs/` e `summary.json`. A tela é gravada em todo teste, mas o vídeo só é guardado quando o teste falha (os 3 mais recentes de cada teste).
 
 ### Web (Playwright)
 
@@ -161,7 +162,7 @@ Cada workspace tem um `.env.example`. Copie para `.env` só se quiser sobrescrev
 | `ANDROID_PLATFORM_VERSION` | mobile | versão do device |
 | `APP_PATH` | mobile | `./apps/my-demo-app.apk` |
 | `MDA_RELEASE_TAG` | mobile | último release |
-| `RECORD_VIDEO` / `VIDEOS_TO_KEEP` | mobile | `true` / `5` |
+| `RECORD_VIDEO` / `VIDEOS_TO_KEEP` | mobile | `true` / `3` por teste |
 | `BASE_URL` | web | `https://www.saucedemo.com` |
 | `SAUCE_STANDARD_USER` / `SAUCE_PASSWORD` | web | credenciais públicas do site |
 | `HOST` / `PORT` | scheduler | `127.0.0.1` / `7400` |

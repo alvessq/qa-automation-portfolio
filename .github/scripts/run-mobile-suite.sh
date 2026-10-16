@@ -26,7 +26,7 @@ case "$TARGET" in
       echo "::error::nome de spec inválido: $spec"
       exit 1
     fi
-    timeout "$SUITE_TIMEOUT" npm run test:spec -w mobile-e2e -- "./test/specs/$spec.spec.ts"
+    timeout "$SUITE_TIMEOUT" npm run "spec:$spec" -w mobile-e2e
     ;;
   *)
     echo "::error::alvo desconhecido: $TARGET"

@@ -1,9 +1,11 @@
-// Executa uma suíte definida em suites.json: `node scripts/run-suite.mjs smoke`.
-// Antes da suíte, reinicia o emulador local a cada N execuções. Enquanto a
-// suíte roda, um vigia confere se o device continua respondendo e encerra
-// tudo na hora se o emulador cair (sai com código 3).
+// Executa uma suíte de suites.json ou uma spec avulsa:
+//   node scripts/run-suite.mjs smoke
+//   node scripts/run-suite.mjs spec:login
+// Antes, confere o ambiente (doctor) e reinicia o emulador local a cada N
+// execuções. Enquanto roda, um vigia confere se o device continua respondendo
+// e encerra tudo na hora se o emulador cair (sai com código 3).
 import fs from 'node:fs';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { resolveFromWorkspace, resolvePackageBin, WORKSPACE_DIR } from './lib/paths.mjs';
 import { adb, firstOnlineDevice } from './lib/android.mjs';
 import { createWatchdog, downMessage } from './lib/watchdog.mjs';
@@ -11,15 +13,20 @@ import { avdNameOf, disableAnimations, killEmulator, portOf, startEmulator, wait
 import { createCounter, decideRecycle, DEFAULT_EVERY } from './lib/recycle.mjs';
 
 const EXIT_DEVICE_DOWN = 3;
-const suiteName = process.argv[2];
+const target = process.argv[2] ?? '';
 const suites = JSON.parse(fs.readFileSync(resolveFromWorkspace('suites.json'), 'utf8'));
+const singleSpec = /^spec:([a-z-]+)$/.exec(target)?.[1];
+const specNames = singleSpec ? [singleSpec] : suites[target];
 
-if (!suiteName || !suites[suiteName]) {
-  console.error(`Uso: node scripts/run-suite.mjs <${Object.keys(suites).join('|')}>`);
+if (!specNames) {
+  console.error(`Uso: node scripts/run-suite.mjs <${Object.keys(suites).join('|')}|spec:NOME>`);
   process.exit(1);
 }
 
-const specArgs = suites[suiteName].flatMap((name) => {
+const doctor = spawnSync(process.execPath, [resolveFromWorkspace('scripts/doctor.mjs')], { cwd: WORKSPACE_DIR, stdio: 'inherit' });
+if (doctor.status !== 0) process.exit(doctor.status ?? 1);
+
+const specArgs = specNames.flatMap((name) => {
   const spec = `./test/specs/${name}.spec.ts`;
   if (!fs.existsSync(resolveFromWorkspace(spec))) {
     console.error(`[suite] spec inexistente em suites.json: ${spec}`);
@@ -33,11 +40,11 @@ const serial = process.env.ANDROID_UDID || firstOnlineDevice();
 
 if (serial) await recycleIfDue(serial);
 
-console.log(`[suite] ${suiteName}: ${suites[suiteName].join(', ')}`);
+console.log(`[suite] ${target}: ${specNames.join(', ')}`);
 const child = spawn(process.execPath, [wdioBin, 'run', './wdio.conf.ts', ...specArgs], {
   cwd: WORKSPACE_DIR,
   stdio: 'inherit',
-  env: { ...process.env, TEST_SUITE: suiteName },
+  env: { ...process.env, TEST_SUITE: target },
   detached: process.platform !== 'win32',
 });
 
