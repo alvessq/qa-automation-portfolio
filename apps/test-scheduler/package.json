@@ -2,16 +2,30 @@
   "name": "test-scheduler",
   "version": "1.0.0",
   "private": true,
-  "description": "Agenda e acompanha execuções das suítes de teste, com fila serial, janela de horário e painel web.",
+  "description": "Agenda, executa e acompanha os testes mobile e web, com fila única, triagem de falhas, nuvem e painel em React.",
   "type": "module",
   "scripts": {
+    "prestart": "npm run build",
     "start": "node src/server.mjs",
     "dev": "node --watch src/server.mjs",
+    "dev:web": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit -p web",
     "test:unit": "node --test \"test/**/*.test.mjs\""
   },
   "dependencies": {
+    "adm-zip": "^0.5.16",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
-    "node-cron": "^4.2.0"
+    "node-cron": "^4.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "^5.9.3",
+    "vite": "^6.4.4"
   }
 }

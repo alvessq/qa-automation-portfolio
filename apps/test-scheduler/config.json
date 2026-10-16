@@ -1,10 +1,136 @@
 {
   "jobs": [
     {
-      "id": "web-health",
-      "name": "Web · conferência dos 5 serviços",
+      "id": "mobile-health-device",
+      "name": "Celular online",
+      "workspace": "mobile-e2e",
+      "script": "health:device",
+      "intervalMinutes": 5,
+      "window": {
+        "from": "08:00",
+        "to": "18:00"
+      },
+      "timeoutMinutes": 2,
+      "enabled": false,
+      "triage": false
+    },
+    {
+      "id": "mobile-health-apk",
+      "name": "APK do app",
+      "workspace": "mobile-e2e",
+      "script": "health:apk",
+      "intervalMinutes": 5,
+      "window": {
+        "from": "08:00",
+        "to": "18:00"
+      },
+      "timeoutMinutes": 2,
+      "enabled": false,
+      "triage": false
+    },
+    {
+      "id": "mobile-health-driver",
+      "name": "Driver do Appium",
+      "workspace": "mobile-e2e",
+      "script": "health:driver",
+      "intervalMinutes": 5,
+      "window": {
+        "from": "08:00",
+        "to": "18:00"
+      },
+      "timeoutMinutes": 2,
+      "enabled": false,
+      "triage": false
+    },
+    {
+      "id": "mobile-suite-smoke",
+      "name": "Smoke",
+      "workspace": "mobile-e2e",
+      "script": "suite:smoke",
+      "intervalMinutes": 360,
+      "window": {
+        "from": "08:00",
+        "to": "18:00"
+      },
+      "timeoutMinutes": 40,
+      "enabled": false,
+      "triage": true
+    },
+    {
+      "id": "mobile-suite-regression",
+      "name": "Regressão",
+      "workspace": "mobile-e2e",
+      "script": "suite:regression",
+      "intervalMinutes": 720,
+      "window": {
+        "from": "08:00",
+        "to": "18:00"
+      },
+      "timeoutMinutes": 60,
+      "enabled": false,
+      "triage": true
+    },
+    {
+      "id": "mobile-spec-login",
+      "name": "Login",
+      "workspace": "mobile-e2e",
+      "script": "spec:login",
+      "intervalMinutes": 120,
+      "window": {
+        "from": "08:00",
+        "to": "18:00"
+      },
+      "timeoutMinutes": 20,
+      "enabled": false,
+      "triage": true
+    },
+    {
+      "id": "mobile-spec-catalog",
+      "name": "Catálogo",
+      "workspace": "mobile-e2e",
+      "script": "spec:catalog",
+      "intervalMinutes": 120,
+      "window": {
+        "from": "08:00",
+        "to": "18:00"
+      },
+      "timeoutMinutes": 20,
+      "enabled": false,
+      "triage": true
+    },
+    {
+      "id": "mobile-spec-cart",
+      "name": "Carrinho",
+      "workspace": "mobile-e2e",
+      "script": "spec:cart",
+      "intervalMinutes": 120,
+      "window": {
+        "from": "08:00",
+        "to": "18:00"
+      },
+      "timeoutMinutes": 20,
+      "enabled": false,
+      "triage": true
+    },
+    {
+      "id": "mobile-spec-checkout",
+      "name": "Checkout",
+      "workspace": "mobile-e2e",
+      "script": "spec:checkout",
+      "intervalMinutes": 120,
+      "window": {
+        "from": "08:00",
+        "to": "18:00"
+      },
+      "timeoutMinutes": 20,
+      "enabled": false,
+      "triage": true
+    },
+    {
+      "id": "web-health-pagina",
+      "name": "Página inicial",
       "workspace": "web-e2e",
-      "script": "health",
+      "script": "health:pagina",
       "intervalMinutes": 5,
       "window": {
         "from": "08:00",
@@ -15,8 +141,64 @@
       "triage": false
     },
     {
-      "id": "web-smoke",
-      "name": "Web · smoke",
+      "id": "web-health-app",
+      "name": "Aplicativo",
+      "workspace": "web-e2e",
+      "script": "health:app",
+      "intervalMinutes": 5,
+      "window": {
+        "from": "08:00",
+        "to": "18:00"
+      },
+      "timeoutMinutes": 2,
+      "enabled": true,
+      "triage": false
+    },
+    {
+      "id": "web-health-estilos",
+      "name": "Folha de estilo",
+      "workspace": "web-e2e",
+      "script": "health:estilos",
+      "intervalMinutes": 5,
+      "window": {
+        "from": "08:00",
+        "to": "18:00"
+      },
+      "timeoutMinutes": 2,
+      "enabled": true,
+      "triage": false
+    },
+    {
+      "id": "web-health-catalogo",
+      "name": "Catálogo de produtos",
+      "workspace": "web-e2e",
+      "script": "health:catalogo",
+      "intervalMinutes": 5,
+      "window": {
+        "from": "08:00",
+        "to": "18:00"
+      },
+      "timeoutMinutes": 2,
+      "enabled": true,
+      "triage": false
+    },
+    {
+      "id": "web-health-imagens",
+      "name": "Imagens dos produtos",
+      "workspace": "web-e2e",
+      "script": "health:imagens",
+      "intervalMinutes": 5,
+      "window": {
+        "from": "08:00",
+        "to": "18:00"
+      },
+      "timeoutMinutes": 2,
+      "enabled": true,
+      "triage": false
+    },
+    {
+      "id": "web-test-smoke",
+      "name": "Smoke",
       "workspace": "web-e2e",
       "script": "test:smoke",
       "intervalMinutes": 60,
@@ -29,8 +211,8 @@
       "triage": true
     },
     {
-      "id": "web-regression",
-      "name": "Web · regressão completa",
+      "id": "web-test",
+      "name": "Regressão completa",
       "workspace": "web-e2e",
       "script": "test",
       "intervalMinutes": 360,
@@ -40,30 +222,46 @@
       "triage": true
     },
     {
-      "id": "mobile-smoke",
-      "name": "Mobile · smoke (requer emulador)",
-      "workspace": "mobile-e2e",
-      "script": "suite:smoke",
+      "id": "web-spec-login",
+      "name": "Login",
+      "workspace": "web-e2e",
+      "script": "spec:login",
       "intervalMinutes": 120,
       "window": {
-        "from": "09:00",
+        "from": "08:00",
         "to": "18:00"
       },
-      "timeoutMinutes": 20,
+      "timeoutMinutes": 10,
       "enabled": false,
       "triage": true
     },
     {
-      "id": "nuvem-mobile-smoke",
-      "name": "Nuvem · mobile smoke no emulador do GitHub",
-      "target": "cloud",
-      "workflow": "mobile-e2e.yml",
-      "inputs": {
-        "suite": "smoke"
+      "id": "web-spec-cart",
+      "name": "Carrinho",
+      "workspace": "web-e2e",
+      "script": "spec:cart",
+      "intervalMinutes": 120,
+      "window": {
+        "from": "08:00",
+        "to": "18:00"
       },
-      "intervalMinutes": 360,
-      "window": null,
-      "enabled": false
+      "timeoutMinutes": 10,
+      "enabled": false,
+      "triage": true
+    },
+    {
+      "id": "web-spec-checkout",
+      "name": "Checkout",
+      "workspace": "web-e2e",
+      "script": "spec:checkout",
+      "intervalMinutes": 120,
+      "window": {
+        "from": "08:00",
+        "to": "18:00"
+      },
+      "timeoutMinutes": 10,
+      "enabled": false,
+      "triage": true
     }
   ]
 }

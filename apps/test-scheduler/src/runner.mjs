@@ -30,6 +30,15 @@ export function createRunner({ store, repoRoot, onChange = () => {}, onFinish = 
     return true;
   }
 
+  /** Nova ordem da fila a partir da lista completa de ids (falha se a fila mudou nesse meio-tempo). */
+  function reorder(ids) {
+    const byId = new Map(queue.map((item) => [item.job.id, item]));
+    if (ids.length !== queue.length || !ids.every((id) => byId.has(id))) return false;
+    queue.splice(0, queue.length, ...ids.map((id) => byId.get(id)));
+    onChange();
+    return true;
+  }
+
   function stop(jobId) {
     if (current?.job.id !== jobId) return false;
     current.stopRequested = true;
@@ -90,6 +99,7 @@ export function createRunner({ store, repoRoot, onChange = () => {}, onFinish = 
   return {
     enqueue,
     dequeue,
+    reorder,
     stop,
     state: () => ({
       running: current ? { jobId: current.job.id, runId: current.run.runId, startedAt: current.run.startedAt } : null,

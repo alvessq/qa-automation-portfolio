@@ -1,0 +1,26 @@
+{
+  "jobs": [
+    {
+      "id": "nuvem-smoke",
+      "name": "Smoke a cada 6 horas",
+      "cron": "0 */6 * * *",
+      "enabled": false,
+      "order": 10,
+      "workflow": "mobile-e2e.yml",
+      "inputs": {
+        "suite": "smoke"
+      }
+    },
+    {
+      "id": "nuvem-regressao",
+      "name": "Regressão de madrugada",
+      "cron": "0 2 * * *",
+      "enabled": false,
+      "order": 20,
+      "workflow": "mobile-e2e.yml",
+      "inputs": {
+        "suite": "regression"
+      }
+    }
+  ]
+}

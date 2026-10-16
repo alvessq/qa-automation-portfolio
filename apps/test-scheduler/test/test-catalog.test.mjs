@@ -56,5 +56,18 @@ describe('catalogFor com os testes reais do monorepo', () => {
   it('o health check tem uma descrição própria', () => {
     const [feature] = catalogFor({ workspace: 'web-e2e', script: 'health' }, APPS_DIR);
     assert.equal(feature.feature, 'Saúde do site');
+    assert.equal(feature.scenarios.length, 5);
+  });
+
+  it('cada conferência do health mostra só a si mesma', () => {
+    const [web] = catalogFor({ workspace: 'web-e2e', script: 'health:imagens' }, APPS_DIR);
+    assert.deepEqual(web.scenarios.map((s) => s.title), ['Imagens dos produtos: a imagem de um produto carrega']);
+    const [mobile] = catalogFor({ workspace: 'mobile-e2e', script: 'health:device' }, APPS_DIR);
+    assert.equal(mobile.feature, 'Saúde do ambiente mobile');
+  });
+
+  it('script de uma spec mostra só aquela spec', () => {
+    assert.deepEqual(catalogFor({ workspace: 'web-e2e', script: 'spec:cart' }, APPS_DIR).map((f) => f.file), ['cart.spec.ts']);
+    assert.deepEqual(catalogFor({ workspace: 'mobile-e2e', script: 'spec:checkout' }, APPS_DIR).map((f) => f.file), ['checkout.spec.ts']);
   });
 });

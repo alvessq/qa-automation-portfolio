@@ -55,8 +55,9 @@ export function createStore({ configFile, historyFile, historyLimit, verdictsFil
       writeJson(historyFile, history);
     },
 
-    clearHistory() {
-      history = [];
+    /** Sem argumento apaga tudo; com `keep`, só as execuções para as quais ele devolve false. */
+    clearHistory(keep = () => false) {
+      history = history.filter(keep);
       writeJson(historyFile, history);
     },
 

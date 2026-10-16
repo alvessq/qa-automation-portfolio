@@ -1,4 +1,6 @@
 name: Mobile E2E (Android)
+# O painel do agendador lê este nome para saber qual teste cada execução rodou.
+run-name: "Mobile E2E · ${{ inputs.suite == 'spec' && format('spec {0}', inputs.specName) || inputs.suite || (github.event_name == 'schedule' && 'regression') || 'smoke' }}"
 
 on:
   workflow_dispatch:
