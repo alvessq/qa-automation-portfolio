@@ -15,6 +15,7 @@ apps/web-e2e/.auth/
 
 # Scheduler
 apps/test-scheduler/data/
+apps/test-scheduler/dist/
 
 .DS_Store
 Thumbs.db

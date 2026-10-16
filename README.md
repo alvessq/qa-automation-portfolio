@@ -10,7 +10,7 @@ Monorepo de automação de testes com três frentes:
 |---|---|---|
 | [`apps/mobile-e2e`](apps/mobile-e2e) | Appium 3 + WebdriverIO 9 + TypeScript | E2E do app Android **[Sauce Labs My Demo App](https://github.com/saucelabs/my-demo-app-android)** |
 | [`apps/web-e2e`](apps/web-e2e) | Playwright + TypeScript | E2E web do **[Sauce Demo](https://www.saucedemo.com)** e health check |
-| [`apps/test-scheduler`](apps/test-scheduler) | Node.js + Express + node-cron | Agenda as suítes, mantém fila e histórico, e expõe um painel web |
+| [`apps/test-scheduler`](apps/test-scheduler) | Node.js + Express + React | Agenda e executa os testes com fila única, triagem de falhas e nuvem, num painel web |
 
 Os dois alvos são aplicações públicas mantidas pela Sauce Labs justamente para prática de automação.
 
@@ -63,9 +63,10 @@ Os dois alvos são aplicações públicas mantidas pela Sauce Labs justamente pa
 │   │   ├── src/{config,data,fixtures,helpers,pages}/
 │   │   └── tests/
 │   └── test-scheduler/
-│       ├── config.json            # jobs versionados
-│       ├── src/                   # servidor, fila, regras de janela, validação
-│       ├── public/                # painel web
+│       ├── config.json            # testes locais versionados
+│       ├── cloud-schedule.json    # agenda da nuvem versionada
+│       ├── src/                   # servidor, fila, triagem, nuvem, vídeos
+│       ├── web/                   # painel em React + Vite + TypeScript
 │       └── test/                  # testes unitários (node:test)
 └── docs/
     └── casos-de-teste.md
@@ -123,19 +124,35 @@ npm run spec:cart -w web-e2e           # uma spec (também health:pagina, health
 npm run report:web                     # abre o relatório HTML
 ```
 
-### Agendador
+### Agendador e painel
 
 ```bash
-npm run scheduler                      # http://127.0.0.1:7400
+npm run scheduler                      # gera o painel e abre em http://127.0.0.1:7400
+npm run dev:web -w test-scheduler      # painel com recarga automática (com o agendador rodando)
 ```
 
-Os jobs ficam em [`apps/test-scheduler/config.json`](apps/test-scheduler/config.json). Cada job aponta para um script npm de um workspace de teste e define intervalo, janela de horário e timeout. Pelo painel dá para ativar ou desativar jobs, executar na hora, parar, acompanhar a fila e ler o log de cada execução. Além disso:
+O painel é feito em **React + Vite + TypeScript** e o servidor em Express. A estrutura é a mesma para os dois produtos:
 
-- **O que cada job testa:** o botão "O que testa" lista, em português, as funcionalidades e os cenários que o script executa, lidos dos próprios arquivos de teste (inclusive o filtro por `@smoke` e as suítes do `suites.json`). Quem não lê código entende o que passou ou falhou.
-- **Configuração conferida na subida:** o painel e o log listam as variáveis que faltam e o que cada ausência desliga, sem nunca mostrar os valores. Os `.env` ficam fora do Git, então depois de um clone novo essa é a pista do que repor.
-- **Celular preparado sozinho:** se houver job mobile ativo, ao abrir o painel ele confere se saiu um APK novo e, se nenhum device estiver online, liga um emulador em segundo plano (`PREPARE_MOBILE`). O botão "Preparar celular agora" faz o mesmo sob demanda; pelo terminal, `npm run prepare:device -w mobile-e2e`.
-- **Nuvem pelo painel:** a seção "Execuções na nuvem" mostra as últimas execuções de cada workflow do GitHub Actions e permite disparar um deles (com a suíte, no caso do mobile). Também dá para criar **jobs de nuvem** (`"target": "cloud"`), que seguem a mesma agenda e janela de horário dos jobs locais, mas disparam o workflow em vez de rodar na máquina.
-- **Abre pausado:** abrir o painel não dispara nenhuma suíte. Retomar a agenda é uma decisão explícita (`START_PAUSED=false` muda o padrão; na CI ela nunca começa pausada).
+- **Visão geral:** total de testes, o que está executando, falhas, situação do GitHub e um cartão por produto (Mobile e Web), além da configuração que falta.
+- **Mobile e Web**, cada um com abas que o painel lembra entre visitas:
+  - **Local:** testes rodando nesta máquina.
+    - **Health dos serviços:** uma linha por conferência (no web: página, aplicativo, estilos, catálogo e imagens; no mobile: celular online, APK e driver do Appium), cada uma com intervalo, janela de horário, próxima execução e logs.
+    - **Testes (Local):** fila única com ↑ ↓ ×, "Novo" com automações prontas (suítes, testes e health checks lidos dos `package.json`), edição na própria linha, escolha das specs do smoke e da regressão, edição da agenda em lote, "O que testa" e confirmação antes de excluir.
+    - **Histórico:** filtros por teste, status, data e busca, com paginação. Cada execução abre com o log e o vídeo; quando não há vídeo, o painel explica o motivo.
+  - **GitHub** (mobile): os mesmos testes no emulador do GitHub Actions.
+    - **Testes (GitHub):** executar, cancelar e ver logs, screenshots e vídeo de cada execução.
+    - **Agenda:** horários fáceis de escolher (a cada X horas, todo dia, seg–sex ou cron), na ordem da lista. A fila dispara um de cada vez e só manda o próximo quando a execução anterior terminar.
+    - **Histórico:** as execuções da nuvem, com filtros.
+  - **Issues:** o que a triagem decidiu sobre cada falha, com a issue aberta, o vídeo e o que está sendo reproduzido agora.
+
+Detalhes que vêm do uso no dia a dia:
+
+- **Uma execução por vez:** health e E2E dividem a mesma fila, porque o emulador e o site não devem receber duas suítes ao mesmo tempo.
+- **Vídeo só de falha:** a tela é gravada sempre, mas o arquivo só fica quando o teste falha, e ficam só os 3 mais recentes de cada teste.
+- **Configuração conferida na subida:** a visão geral e o log listam as variáveis que faltam e o que cada ausência desliga, sem nunca mostrar os valores.
+- **Celular preparado sozinho:** se houver teste mobile ativo, ao abrir o painel ele confere se saiu um APK novo e, se nenhum device estiver online, liga um emulador em segundo plano (`PREPARE_MOBILE`). O aviso "Emulador desligado" tem o botão "Preparar celular agora"; pelo terminal, `npm run prepare:device -w mobile-e2e`.
+- **Abre pausado:** abrir o painel não dispara nada, nem localmente nem na nuvem. Retomar a agenda é uma decisão explícita, no botão do topo (`START_PAUSED=false` muda o padrão; na CI a agenda nunca começa pausada).
+- A lista de testes locais fica em [`config.json`](apps/test-scheduler/config.json) e a agenda da nuvem em [`cloud-schedule.json`](apps/test-scheduler/cloud-schedule.json), os dois versionados. Só scripts que existem nos `package.json` podem ser agendados, nunca um comando livre.
 
 #### Triagem de falhas
 
@@ -152,6 +169,7 @@ job falha ──► repete até 3 vezes (na frente da fila)
 - **Sem issue duplicada:** cada falha ganha uma impressão digital (job + primeira linha de erro, sem números). Se já existe issue aberta com a mesma impressão, a triagem comenta nela em vez de abrir outra.
 - **Avisos opcionais:** com `GITHUB_REPOSITORY` e `GITHUB_TOKEN`, bug confirmado vira issue com o rótulo `triagem`. Com `TRIAGE_WEBHOOK_URL`, todo veredito gera um aviso curto (Slack, Teams ou Discord). Sem nada configurado, os vereditos aparecem só no painel.
 - O health check fica de fora (`"triage": false`): ele existe justamente para avisar rápido.
+- A aba **Issues** do painel mostra cada veredito, a issue aberta e o vídeo da falha.
 
 ## Configuração
 
@@ -171,7 +189,7 @@ Cada workspace tem um `.env.example`. Copie para `.env` só se quiser sobrescrev
 | `START_PAUSED` | scheduler | `true` (a agenda abre pausada) |
 | `PANEL_USER` / `PANEL_PASSWORD` | scheduler | vazio (obrigatório fora de localhost) |
 | `TRIAGE_RETRIES` | scheduler | `3` |
-| `GITHUB_REPOSITORY` / `GITHUB_TOKEN` | scheduler | vazio (sem issues) |
+| `GITHUB_REPOSITORY` / `GITHUB_TOKEN` | scheduler | vazio (sem issues e sem nuvem pelo painel; sem token a nuvem fica só leitura) |
 | `TRIAGE_WEBHOOK_URL` | scheduler | vazio (sem webhook) |
 
 ## Cenários cobertos
