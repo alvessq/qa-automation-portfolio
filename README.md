@@ -119,6 +119,7 @@ npm run test:web                       # suíte completa
 npm run test:web:smoke                 # apenas @smoke
 npm run health:web                     # 5 conferências do site, cada uma com seu resultado
 npm run health:web -- imagens catalogo  # só as conferências escolhidas
+npm run spec:cart -w web-e2e           # uma spec (também health:pagina, health:imagens...)
 npm run report:web                     # abre o relatório HTML
 ```
 
