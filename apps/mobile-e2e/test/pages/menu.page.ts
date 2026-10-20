@@ -18,10 +18,9 @@ class MenuPage extends BasePage {
     return $('id=android:id/button1');
   }
 
-
   async goToLogin(): Promise<void> {
     await this.waitForScreen();
-    await this.tap(this.loginItem);
+    await this.tapWhenSettled(this.loginItem);
   }
 
   async isLoggedIn(): Promise<boolean> {
@@ -32,7 +31,7 @@ class MenuPage extends BasePage {
   /** Faz logout confirmando o diálogo nativo; o app leva para a tela de login. */
   async logout(): Promise<void> {
     await this.waitForScreen();
-    await this.tap(this.logoutItem);
+    await this.tapWhenSettled(this.logoutItem);
     await this.tap(this.dialogConfirmButton);
   }
 }

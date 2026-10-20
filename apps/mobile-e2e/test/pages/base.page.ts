@@ -48,6 +48,26 @@ export abstract class BasePage {
     await element.click();
   }
 
+  /**
+   * Toca só depois que o elemento parou de se mexer. Em telas que deslizam
+   * (o menu lateral), um toque durante a animação é ignorado pelo app; no
+   * emulador sem GPU da CI a animação é lenta o bastante para isso acontecer.
+   */
+  protected async tapWhenSettled(element: Element): Promise<void> {
+    await element.waitForDisplayed();
+    let last = '';
+    await browser.waitUntil(
+      async () => {
+        const now = JSON.stringify(await element.getLocation());
+        const settled = now === last;
+        last = now;
+        return settled;
+      },
+      { interval: 300, timeoutMsg: 'o elemento não parou de se mexer' },
+    );
+    await element.click();
+  }
+
   protected async fill(element: Element, value: string): Promise<void> {
     await element.waitForDisplayed();
     await element.clearValue();
