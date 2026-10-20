@@ -4,6 +4,8 @@
 [![Mobile E2E](https://github.com/alvessq/qa-automation-portfolio/actions/workflows/mobile-e2e.yml/badge.svg)](https://github.com/alvessq/qa-automation-portfolio/actions/workflows/mobile-e2e.yml)
 [![Web Monitoring](https://github.com/alvessq/qa-automation-portfolio/actions/workflows/web-monitoring.yml/badge.svg)](https://github.com/alvessq/qa-automation-portfolio/actions/workflows/web-monitoring.yml)
 
+Projeto público que recria, com apps de demonstração, a abordagem de automação que uso no trabalho. Os cases completos estão no meu [portfólio](https://alvessq.github.io).
+
 Monorepo de automação de testes com três frentes:
 
 | Workspace | Stack | O que faz |
@@ -14,10 +16,13 @@ Monorepo de automação de testes com três frentes:
 
 Os dois alvos são aplicações públicas mantidas pela Sauce Labs justamente para prática de automação.
 
+<!-- GIF: docs/images/mobile-e2e-demo.gif (teste rodando no emulador) -->
+<!-- ![Teste mobile rodando no emulador](docs/images/mobile-e2e-demo.gif) -->
+
 <p align="center">
   <img src="docs/images/my-demo-app-catalog.png" alt="Catálogo do My Demo App no emulador" height="420">
   &nbsp;
-  <img src="docs/images/scheduler-dashboard.png" alt="Painel do Test Scheduler" height="420">
+  <img src="docs/images/scheduler-dashboard.png" alt="Painel de testes: página Web com os health checks" height="420">
 </p>
 
 ---
