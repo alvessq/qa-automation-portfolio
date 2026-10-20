@@ -88,6 +88,13 @@ export const config: WebdriverIO.Config = {
     resetResultsLog();
   },
 
+  // No emulador sem GPU, a animação da tela de abertura mantém o app "ocupado"
+  // e o UiAutomator2 desiste de ler a tela esperando ele ficar ocioso. Sem essa
+  // espera, cada busca aguarda o próprio elemento (waitforTimeout), que é o certo.
+  async before() {
+    if (slowEnvironment) await driver.updateSettings({ waitForIdleTimeout: 0 });
+  },
+
   async beforeTest() {
     await startVideo();
   },

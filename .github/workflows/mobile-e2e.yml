@@ -98,7 +98,7 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-${{ env.API_LEVEL }}-google_apis-x86_64-pixel6-v1
+          key: avd-${{ env.API_LEVEL }}-google_apis-x86_64-pixel6-v2-sem-vulkan
 
       - name: Criar snapshot do AVD
         if: steps.avd-cache.outputs.cache-hit != 'true'
@@ -109,7 +109,7 @@ jobs:
           arch: x86_64
           profile: pixel_6
           force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -noaudio -no-boot-anim -camera-back none
           disable-animations: false
           script: echo "AVD criado e salvo em cache."
 
@@ -122,7 +122,7 @@ jobs:
           profile: pixel_6
           ram-size: 4096M
           force-avd-creation: false
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -feature -Vulkan -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           emulator-boot-timeout: 900
           script: bash .github/scripts/run-mobile-suite.sh "${{ steps.suite.outputs.target }}"

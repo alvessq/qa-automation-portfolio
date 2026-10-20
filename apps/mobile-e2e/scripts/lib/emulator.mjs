@@ -22,7 +22,10 @@ export function emulatorArgs({ avd, port, headless = false, gpu = !headless }) {
   const args = ['-avd', avd];
   if (port) args.push('-port', String(port));
   if (headless) args.push('-no-window', '-no-snapshot-save', '-noaudio', '-no-boot-anim', '-camera-back', 'none');
-  args.push('-gpu', gpu ? 'host' : 'swiftshader_indirect');
+  // Sem GPU, o Vulkan por software deixa a renderização lenta a ponto de o app
+  // parecer travado para o Appium; desligado, o emulador fica estável.
+  if (gpu) args.push('-gpu', 'host');
+  else args.push('-gpu', 'swiftshader_indirect', '-feature', '-Vulkan');
   return args;
 }
 
