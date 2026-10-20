@@ -10,31 +10,30 @@ import { dismissSystemDialogs } from './system-dialogs';
 export async function resetApp(): Promise<void> {
   await driver.execute('mobile: clearApp', { appId: APP_PACKAGE });
   await driver.activateApp(APP_PACKAGE);
-  await waitUntilScreenReadable();
-  await dismissSystemDialogs();
-  await catalogPage.waitForScreen();
+  await waitForCatalog();
 }
 
 /**
- * Logo depois de abrir, a animação da tela de abertura pode deixar a tela
- * ilegível para o UiAutomator2 por alguns segundos (no emulador sem GPU da CI,
- * por mais de 10 s). Nesse intervalo, qualquer busca falha com erro em vez de
- * "não encontrado". Espera até a tela poder ser lida antes de procurar algo.
+ * Espera o catálogo aparecer, fechando diálogos do sistema pelo caminho. Logo
+ * depois de abrir, a animação da tela de abertura pode deixar a tela ilegível
+ * para o UiAutomator2 por vários segundos (no emulador sem GPU da CI, mais de
+ * 10 s, e de forma intermitente). Nesse intervalo as buscas dão erro em vez de
+ * "não encontrado", então erro aqui conta como "ainda carregando".
  */
-async function waitUntilScreenReadable(): Promise<void> {
+async function waitForCatalog(): Promise<void> {
   await driver.waitUntil(
     async () => {
       try {
-        await driver.getPageSource();
-        return true;
+        await dismissSystemDialogs();
+        return await catalogPage.isOnScreen();
       } catch {
         return false;
       }
     },
     {
       timeout: isCI ? 120_000 : 30_000,
-      interval: 2_000,
-      timeoutMsg: 'a tela do app não pôde ser lida: o app ficou preso na tela de abertura',
+      interval: 1_000,
+      timeoutMsg: 'o catálogo não apareceu: o app ficou preso na tela de abertura',
     },
   );
 }

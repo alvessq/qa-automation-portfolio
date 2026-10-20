@@ -15,8 +15,12 @@ export abstract class BasePage {
   /** Elemento que prova que a tela carregou. */
   protected abstract get screenAnchor(): Element;
 
+  /**
+   * Espera a tela aparecer. Erro de leitura (tela ainda animando no emulador
+   * sem GPU da CI) conta como "ainda não apareceu", e não derruba o teste.
+   */
   async waitForScreen(timeout?: number): Promise<this> {
-    await this.screenAnchor.waitForDisplayed({
+    await browser.waitUntil(() => this.isVisible(this.screenAnchor), {
       timeout,
       timeoutMsg: `${this.constructor.name} não carregou`,
     });
