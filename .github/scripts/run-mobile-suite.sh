@@ -11,7 +11,10 @@ SUITE_TIMEOUT="${SUITE_TIMEOUT:-40m}"
 mkdir -p "$RESULTS_DIR"
 
 adb wait-for-device
-adb shell settings put global window_animation_scale 0 || true
+# Espera o Android ligar, reinicia uma vez se ele não ficar saudável e aplica os
+# ajustes de estabilidade (resolução menor, animações desligadas, diálogos do
+# sistema fechados). Sem emulador saudável, nem começa: sai com 3 (device offline).
+node apps/mobile-e2e/scripts/prepare-ci-emulator.mjs || exit 3
 adb logcat -c || true
 adb logcat -v time > "$RESULTS_DIR/logcat.txt" 2>&1 &
 LOGCAT_PID=$!

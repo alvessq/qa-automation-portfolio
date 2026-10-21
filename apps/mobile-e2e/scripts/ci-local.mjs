@@ -11,8 +11,10 @@
 // Usa uma porta própria (5556) para conviver com o emulador que você já usa.
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
-import { disableAnimations, killEmulator, listAvds, pickAvd, startEmulator, waitForBoot } from './lib/emulator.mjs';
+import { killEmulator, listAvds, pickAvd, startEmulator, waitForBoot } from './lib/emulator.mjs';
 import { WORKSPACE_DIR } from './lib/paths.mjs';
+import { adb } from './lib/android.mjs';
+import { prepareForSuite, resetTuning } from './lib/emulator-health.mjs';
 
 export const DEFAULT_PORT = 5556;
 
@@ -43,7 +45,10 @@ async function main() {
   console.log(`[ci-local] subindo ${avd} em ${serial} ${gpu ? 'com GPU' : 'sem GPU, como na CI'}…`);
   startEmulator({ avd, port, headless: true, gpu });
 
+  // Os ajustes de tela da CI ficam gravados no AVD: desfaz antes de sair,
+  // para o emulador do dia a dia continuar como estava.
   const shutdown = async () => {
+    resetTuning(adb, serial);
     if (!keep) await killEmulator(serial);
   };
   process.on('SIGINT', async () => {
@@ -56,7 +61,12 @@ async function main() {
     await shutdown();
     process.exit(1);
   }
-  disableAnimations(serial);
+  const preparo = await prepareForSuite(adb, serial, { sleep: (ms) => new Promise((r) => setTimeout(r, ms)), log: console.log });
+  if (!preparo.ok) {
+    console.error(`[ci-local] ${preparo.reason}`);
+    await shutdown();
+    process.exit(3);
+  }
 
   console.log(`[ci-local] emulador pronto. Rodando a suíte ${suite} com as configurações da CI.`);
   const run = spawnSync(process.execPath, ['scripts/run-suite.mjs', suite], {

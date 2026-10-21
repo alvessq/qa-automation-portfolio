@@ -1,5 +1,7 @@
-// Reciclagem do emulador local. Em sessões longas o emulador vai ficando lento
-// e acaba travando; reiniciar a cada N suítes (sem apagar os dados) evita isso.
+// Reciclagem do emulador local. Antes de cada suíte, se o emulador não está
+// saudável (offline ou o Android sem terminar de ligar), ele é reiniciado. E em
+// sessões longas ele vai ficando lento e acaba travando: reiniciar a cada N
+// suítes (sem apagar os dados) evita isso.
 // Na CI não se aplica: lá cada execução já começa com um emulador novo.
 import fs from 'node:fs';
 import os from 'node:os';
@@ -11,10 +13,11 @@ export const DEFAULT_EVERY = 3;
  * Decide o que fazer antes da próxima suíte.
  * `count` é quantas suítes já rodaram desde o último reinício.
  */
-export function decideRecycle({ enabled = true, ci = false, isEmulator = true, count = 0, every = DEFAULT_EVERY }) {
+export function decideRecycle({ enabled = true, ci = false, isEmulator = true, healthy = true, count = 0, every = DEFAULT_EVERY }) {
   if (!enabled) return { action: 'skip', reason: 'desligado (EMULATOR_RECYCLE=false)' };
   if (ci) return { action: 'skip', reason: 'na CI cada execução já usa um emulador novo' };
   if (!isEmulator) return { action: 'skip', reason: 'device físico' };
+  if (!healthy) return { action: 'restart', reason: 'o emulador não está saudável' };
   if (every > 0 && count >= every) return { action: 'restart', reason: `${count} suítes desde o último reinício` };
   return { action: 'keep', reason: `${count}/${every} suítes desde o último reinício` };
 }

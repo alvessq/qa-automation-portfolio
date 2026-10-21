@@ -91,8 +91,11 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: npm run apk:download -w mobile-e2e
 
-      - name: Cache do AVD
-        uses: actions/cache@v4
+      # Restore e save separados: o snapshot é salvo logo depois de criado, mesmo
+      # que os testes falhem depois. Com o cache combinado, ele só era salvo em
+      # execução verde, e cada falha recriava o emulador do zero, mais instável.
+      - name: Restaurar AVD do cache
+        uses: actions/cache/restore@v4
         id: avd-cache
         with:
           path: |
@@ -111,7 +114,16 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -noaudio -no-boot-anim -camera-back none
           disable-animations: false
-          script: echo "AVD criado e salvo em cache."
+          script: echo "AVD criado."
+
+      - name: Salvar AVD no cache
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: ${{ steps.avd-cache.outputs.cache-primary-key }}
 
       - name: Executar ${{ steps.suite.outputs.target }}
         uses: reactivecircus/android-emulator-runner@v2

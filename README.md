@@ -104,7 +104,9 @@ npm run test:mobile           # todas as specs
 
 **Falhou só na CI?** `npm run ci:local -w mobile-e2e` sobe um emulador sem janela e sem GPU (renderização por software), na porta 5556, e roda a suíte com os timeouts e a nova tentativa da CI. Use `-- regression` para outra suíte e `-- smoke --gpu` para comparar com a GPU ligada. Investigar aqui não gasta minutos do GitHub Actions.
 
-**Emulador lento depois de muitas suítes?** Antes de cada suíte local, o emulador é reiniciado a cada 3 execuções, sem apagar os dados (`EMULATOR_RECYCLE_EVERY`; `EMULATOR_RECYCLE=false` desliga). Na CI não se aplica, porque cada execução já começa com um emulador novo.
+**Emulador travado ou lento?** Antes de cada suíte local, o emulador é conferido: se não estiver saudável (offline ou com o Android sem terminar de ligar), é reiniciado na hora; e, mesmo saudável, é reiniciado a cada 3 execuções, sem apagar os dados (`EMULATOR_RECYCLE_EVERY`; `EMULATOR_RECYCLE=false` desliga).
+
+**Na nuvem**, antes dos testes, o emulador sem placa de vídeo é preparado: espera o Android ligar, é reiniciado uma vez se não ficar saudável, roda com resolução menor (720x1600) e animações desligadas, e os diálogos do sistema, como o "não está respondendo", são fechados. O snapshot do emulador fica em cache assim que é criado, mesmo que os testes falhem depois.
 
 **Emulador caiu no meio da suíte?** Um vigia pergunta ao `adb` a cada 15 s se o device responde. Depois de duas falhas seguidas, a suíte é encerrada na hora com a mensagem `device offline` (código de saída 3), em vez de cada teste esperar o próprio timeout. A triagem do agendador reconhece essa mensagem como problema de ambiente.
 
